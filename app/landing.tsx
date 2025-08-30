@@ -1,15 +1,12 @@
-import AsyncStorage from '@react-native-async-storage/async-storage'
 import { LinearGradient } from 'expo-linear-gradient'
 import { router } from 'expo-router'
 import { Pressable, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { useSession } from '../src/providers/SessionProvider'
 import "../global.css"
 
 export default function LandingScreen() {
-
-  const markLandingSeen = async () => {
-    await AsyncStorage.setItem('hasSeenLanding', 'true')
-  }
+  const { markLandingSeen } = useSession()
 
   const handleSignUp = async () => {
     await markLandingSeen()

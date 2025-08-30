@@ -9,6 +9,7 @@ import '../global.css';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { AuthProvider } from '../src/providers/AuthProvider';
+import { SessionProvider } from '../src/providers/SessionProvider';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -31,10 +32,12 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <Stack screenOptions={{ headerShown: false }} />
-          <StatusBar style="auto" />
-        </ThemeProvider>
+        <SessionProvider>
+          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+            <Stack screenOptions={{ headerShown: false }} />
+            <StatusBar style="auto" />
+          </ThemeProvider>
+        </SessionProvider>
       </AuthProvider>
     </SafeAreaProvider>
   );
