@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
 // You'll need to add your Gemini API key to your environment variables
-const API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY || 'your-api-key-here'
+const API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY || ''
 
 const genAI = new GoogleGenerativeAI(API_KEY)
 

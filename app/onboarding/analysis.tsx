@@ -5,8 +5,8 @@ import { Animated, Dimensions, StyleSheet, Text, View } from 'react-native'
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg'
 import { OnboardingButton } from '../../src/components/onboarding/OnboardingButton'
 import { OnboardingContainer } from '../../src/components/onboarding/OnboardingContainer'
+import { AIAnalysisResult, analyzeAttachmentWithAI } from '../../src/services/aiAnalysisService'
 import { useOnboardingStore } from '../../src/stores/onboardingStore'
-import { analyzeAttachmentWithAI, AIAnalysisResult } from '../../src/services/aiAnalysisService'
 
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle)
