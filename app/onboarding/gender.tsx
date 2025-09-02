@@ -9,7 +9,6 @@ import { useOnboardingStore } from '../../src/stores/onboardingStore'
 const GENDER_OPTIONS = [
   'Woman',
   'Man',
-  'Non-binary',
 ]
 
 export default function GenderScreen() {

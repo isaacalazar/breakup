@@ -7,6 +7,8 @@ import { combineLocalDateTimeToUTC } from '../utils/date'
 
 export interface OnboardingData {
   gender: string
+  name: string
+  age: string
   breakupDate: string
   lastContactDate: string
   lastContactTime: string
@@ -30,6 +32,8 @@ interface OnboardingStore extends OnboardingData {
 
 const initialState: OnboardingData = {
   gender: '',
+  name: '',
+  age: '',
   breakupDate: '',
   lastContactDate: '',
   lastContactTime: '',

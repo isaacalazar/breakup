@@ -11,15 +11,34 @@ export default function SignUpScreen() {
   const router = useRouter()
 
   const signUp = async () => {
+    if (!email || password.length < 8) {
+      Alert.alert('Error', 'Please enter a valid email and password (min 8 characters)')
+      return
+    }
+
     setLoading(true)
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-    })
-    if (error) {
-      Alert.alert('Error', error.message)
-    } else {
-      Alert.alert('Success', 'Check your email to verify your account!')
+    try {
+      console.log('Attempting signup with:', { email, hasPassword: !!password })
+      console.log('Supabase URL:', process.env.EXPO_PUBLIC_SUPABASE_URL)
+      console.log('Supabase Key exists:', !!process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY)
+      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      })
+      
+      console.log('Signup response:', { data, error })
+      
+      if (error) {
+        console.error('Signup error:', error)
+        Alert.alert('Error', error.message)
+      } else {
+        Alert.alert('Success', 'Check your email to verify your account!')
+        router.replace('/(tabs)/home')
+      }
+    } catch (e) {
+      console.error('Network error:', e)
+      Alert.alert('Network Error', 'Unable to connect to the server. Please check your internet connection and try again.')
     }
     setLoading(false)
   }

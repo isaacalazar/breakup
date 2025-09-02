@@ -1,6 +1,6 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack, useRootNavigationState } from 'expo-router';
+import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Text, View } from 'react-native';
 import 'react-native-reanimated';
@@ -8,6 +8,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import '../global.css';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
+// import { SuperwallProvider } from 'expo-superwall';
 import { AuthProvider } from '../src/providers/AuthProvider';
 import { SessionProvider } from '../src/providers/SessionProvider';
 
@@ -16,10 +17,6 @@ export default function RootLayout() {
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
-  
-  // Ensure navigation is mounted before rendering
-  const rootState = useRootNavigationState();
-  if (!rootState?.key) return null;
 
   if (!loaded) {
     return (
@@ -31,14 +28,16 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <SessionProvider>
-          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-            <Stack screenOptions={{ headerShown: false }} />
-            <StatusBar style="auto" />
-          </ThemeProvider>
-        </SessionProvider>
-      </AuthProvider>
+      {/* <SuperwallProvider apiKeys={{ ios: process.env.EXPO_PUBLIC_SUPERWALL_IOS_KEY ?? 'pk_1RIA5NXccWoHvrOBbrqq3', android: process.env.EXPO_PUBLIC_SUPERWALL_ANDROID_KEY ?? 'pk_1RIA5NXccWoHvrOBbrqq3' }}> */}
+        <AuthProvider>
+          <SessionProvider>
+            <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+              <Stack screenOptions={{ headerShown: false }} />
+              <StatusBar style="auto" />
+            </ThemeProvider>
+          </SessionProvider>
+        </AuthProvider>
+      {/* </SuperwallProvider> */}
     </SafeAreaProvider>
   );
 }

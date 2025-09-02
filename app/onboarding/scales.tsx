@@ -12,7 +12,7 @@ export default function ScalesScreen() {
                   parseInt(attachment) >= 1 && parseInt(attachment) <= 10
 
   const handleNext = () => {
-    router.push('/onboarding/analysis')
+    router.push('/onboarding/user-info')
   }
 
   const handleBack = () => {

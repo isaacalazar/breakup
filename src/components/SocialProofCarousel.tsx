@@ -127,37 +127,44 @@ export function SocialProofCarousel({ onComplete }: SocialProofCarouselProps) {
           }
         ]}
       >
-        <View style={styles.iconContainer}>
-          <LottieView
-            source={{ uri: 'https://lottie.host/1347cb18-acf8-4baf-9b85-df39899165b1/ozCJBEjHi6.lottie' }}
-            autoPlay
-            loop
-            style={styles.lottie}
-          />
+        {/* Character illustration placeholder */}
+        <View style={styles.illustrationContainer}>
+          <View style={styles.characterPlaceholder}>
+            <LottieView
+              source={{ uri: 'https://lottie.host/1347cb18-acf8-4baf-9b85-df39899165b1/ozCJBEjHi6.lottie' }}
+              autoPlay
+              loop
+              style={styles.characterAnimation}
+            />
+          </View>
         </View>
 
         <Text style={styles.title}>{screen.title}</Text>
 
-        <View style={styles.testimonialContainer}>
-          <Text style={styles.testimonialText}>"{screen.testimonial}"</Text>
-          <Text style={styles.author}>— {screen.author}</Text>
-        </View>
+        <Text style={styles.subtitle}>
+          {screen.testimonial}
+        </Text>
 
-        <View style={styles.impactContainer}>
-          <Text style={styles.impactLabel}>Real Impact:</Text>
-          <Text style={styles.impactText}>{screen.impact}</Text>
-        </View>
-
-        <View style={styles.statContainer}>
-          <Text style={styles.statNumber}>{screen.stat}</Text>
-          <Text style={styles.statLabel}>of users {screen.statLabel}</Text>
-        </View>
-
-        <View style={styles.brandingContainer}>
-          <Text style={styles.brandingText}>Powered by </Text>
-          <Text style={styles.brandingName}>Exhale</Text>
-        </View>
+        <Text style={styles.description}>
+          Understand your strengths and weaknesses, earn medals, and track your progress.
+        </Text>
       </Animated.View>
+
+      {/* Pagination dots */}
+      <View style={styles.paginationContainer}>
+        {socialProofData.map((_, dotIndex) => (
+          <View
+            key={dotIndex}
+            style={[
+              styles.paginationDot,
+              {
+                backgroundColor: dotIndex === currentScreen ? '#FFFFFF' : 'rgba(255,255,255,0.4)',
+                width: dotIndex === currentScreen ? 24 : 8,
+              }
+            ]}
+          />
+        ))}
+      </View>
 
       {/* Next Button */}
       <View style={styles.nextButtonContainer}>
@@ -170,6 +177,9 @@ export function SocialProofCarousel({ onComplete }: SocialProofCarouselProps) {
           </Text>
         </Pressable>
       </View>
+
+      {/* Bottom indicator */}
+      <View style={styles.bottomIndicator} />
     </View>
   )
 
@@ -185,21 +195,6 @@ export function SocialProofCarousel({ onComplete }: SocialProofCarouselProps) {
       >
         {socialProofData.map(renderScreen)}
       </ScrollView>
-
-      <View style={styles.paginationContainer}>
-        {socialProofData.map((_, index) => (
-          <View
-            key={index}
-            style={[
-              styles.paginationDot,
-              {
-                backgroundColor: index === currentScreen ? '#60a5fa' : 'rgba(255,255,255,0.3)',
-                width: index === currentScreen ? 24 : 8,
-              }
-            ]}
-          />
-        ))}
-      </View>
     </View>
   )
 }
@@ -211,134 +206,96 @@ const styles = StyleSheet.create({
   screenContainer: {
     width: screenWidth,
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 32,
   },
   contentContainer: {
     alignItems: 'center',
-    maxWidth: screenWidth - 64,
-    paddingBottom: 150, // Add space for button
+    paddingHorizontal: 20,
+    flex: 1,
+    paddingTop: 20,
+    paddingBottom: 80,
   },
-  iconContainer: {
-    marginBottom: 24,
+  illustrationContainer: {
+    marginBottom: 40,
+    alignItems: 'center',
   },
-  icon: {
-    fontSize: 64,
+  characterPlaceholder: {
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: 'rgba(96, 165, 250, 0.3)',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
   },
-  lottie: {
-    width: 80,
-    height: 80,
+  characterAnimation: {
+    width: 120,
+    height: 120,
   },
   title: {
     color: '#FFFFFF',
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: '700',
     textAlign: 'center',
-    marginBottom: 32,
-    lineHeight: 34,
+    marginBottom: 30,
+    lineHeight: 36,
+    paddingHorizontal: 12,
   },
-  testimonialContainer: {
-    marginBottom: 32,
-    alignItems: 'center',
-  },
-  testimonialText: {
+  subtitle: {
     color: 'rgba(255,255,255,0.9)',
-    fontSize: 18,
-    fontStyle: 'italic',
+    fontSize: 16,
     textAlign: 'center',
-    lineHeight: 28,
-    marginBottom: 16,
+    lineHeight: 24,
+    marginBottom: 30,
+    paddingHorizontal: 20,
   },
-  author: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  impactContainer: {
-    backgroundColor: 'rgba(96, 165, 250, 0.1)',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 24,
-    borderLeftWidth: 3,
-    borderLeftColor: '#60a5fa',
-  },
-  impactLabel: {
-    color: '#60a5fa',
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 4,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  impactText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  statContainer: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  statNumber: {
-    color: '#60a5fa',
-    fontSize: 48,
-    fontWeight: '800',
-    lineHeight: 52,
-  },
-  statLabel: {
+  description: {
     color: 'rgba(255,255,255,0.8)',
-    fontSize: 16,
+    fontSize: 15,
     textAlign: 'center',
-    marginTop: 4,
-  },
-  brandingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  brandingText: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: 14,
-    fontWeight: '400',
-  },
-  brandingName: {
-    color: '#60a5fa',
-    fontSize: 14,
-    fontWeight: '700',
+    lineHeight: 22,
+    marginBottom: 40,
+    paddingHorizontal: 20,
   },
   paginationContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingBottom: 80, // More space above button
-    gap: 8,
+    paddingVertical: 20,
+    gap: 6,
   },
   paginationDot: {
     height: 8,
     borderRadius: 4,
-    transition: 'all 0.3s ease',
   },
   nextButtonContainer: {
-    position: 'absolute',
-    bottom: 120,
-    left: 60,
-    right: 60,
+    paddingHorizontal: 32,
+    paddingBottom: 16,
   },
   nextButton: {
-    backgroundColor: 'white',
-    paddingVertical: 14,
-    paddingHorizontal: 40,
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 16,
+    paddingHorizontal: 32,
     borderRadius: 30,
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
   },
   nextButtonText: {
-    color: '#60a5fa',
+    color: '#000000',
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '700',
+  },
+  bottomIndicator: {
+    height: 4,
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: screenWidth * 0.35,
+    borderRadius: 2,
+    marginBottom: 16,
   },
 })

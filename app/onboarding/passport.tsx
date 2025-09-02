@@ -4,13 +4,18 @@ import { Dimensions, StyleSheet, Text, View } from 'react-native'
 import { OnboardingButton } from '../../src/components/onboarding/OnboardingButton'
 import { OnboardingContainer } from '../../src/components/onboarding/OnboardingContainer'
 import { useOnboardingStore } from '../../src/stores/onboardingStore'
+import { useAuth } from '../../src/providers/AuthProvider'
+import { useSession } from '../../src/providers/SessionProvider'
 
 export default function PassportScreen() {
   const store = useOnboardingStore()
   const { lastContactDate, breakupDate, selectedGoalDays, goalDays, saveProfile } = store
+  const { session } = useAuth()
+  const { markOnboardingComplete } = useSession()
 
   const handleContinue = async () => {
     await saveProfile()
+    await markOnboardingComplete()
     router.replace('/(tabs)/home')
   }
 

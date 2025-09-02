@@ -9,6 +9,8 @@ interface OnboardingContainerProps {
   totalSteps: number
   onBack?: () => void
   showBackButton?: boolean
+  variant?: 'default' | 'danger'
+  hideProgress?: boolean
 }
 
 export function OnboardingContainer({
@@ -16,11 +18,17 @@ export function OnboardingContainer({
   step,
   totalSteps,
   onBack,
-  showBackButton = true
+  showBackButton = true,
+  variant = 'default',
+  hideProgress = false
 }: OnboardingContainerProps) {
+  const gradientColors = variant === 'danger' 
+    ? ['#8B0000', '#B22222', '#DC143C'] // Dark red to lighter red gradient
+    : ['#2D1B69', '#1E0A3C', '#0A0617']; // Original purple gradient
+
   return (
     <LinearGradient 
-      colors={['#2D1B69', '#1E0A3C', '#0A0617']} 
+      colors={gradientColors} 
       style={{ flex: 1 }}
     >
       <SafeAreaView className="flex-1" style={{ overflow: 'hidden' }}>
@@ -38,20 +46,35 @@ export function OnboardingContainer({
               <View className="w-10 h-10" />
             )}
             
-            {/* Progress indicator */}
-            <View className="flex-1 ml-6 h-2 bg-white/15 rounded-full overflow-hidden">
-              <View 
-                className="h-full bg-cyan-400 transition-all duration-500 ease-out"
-                style={{
-                  width: (() => {
-                    const isFinal = step >= (totalSteps - 1)
-                    if (isFinal) return '100%'
-                    const capped = Math.min(step, 3)
-                    return `${(capped / 4) * 100}%`
-                  })()
-                }}
-              />
-            </View>
+            {/* Progress indicator or Logo */}
+            {!hideProgress ? (
+              <View className="flex-1 ml-6 h-2 bg-white/15 rounded-full overflow-hidden">
+                <View 
+                  className="h-full bg-cyan-400 transition-all duration-500 ease-out"
+                  style={{
+                    width: (() => {
+                      const isFinal = step >= (totalSteps - 1)
+                      if (isFinal) return '100%'
+                      const capped = Math.min(step, 3)
+                      return `${(capped / 4) * 100}%`
+                    })()
+                  }}
+                />
+              </View>
+            ) : (
+              <View className="flex-1 items-center justify-center" style={{ marginLeft: 0 }}>
+                <Text
+                  style={{
+                    fontSize: 24,
+                    fontWeight: '700',
+                    color: '#FFFFFF',
+                    letterSpacing: 1.5,
+                  }}
+                >
+                  exhale
+                </Text>
+              </View>
+            )}
             
             <View className="w-10 h-10" />
           </View>

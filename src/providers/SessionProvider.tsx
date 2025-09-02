@@ -1,5 +1,7 @@
-import React, { createContext, useContext, useEffect, useState } from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+// import { useUser } from 'expo-superwall'
+import React, { createContext, useContext, useEffect, useState } from 'react'
+import { supabase } from '../lib/supabase'
 import { useAuth } from './AuthProvider'
 
 interface SessionContextType {
@@ -22,7 +24,8 @@ export function useSession() {
 }
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
-  const { loading: authLoading } = useAuth()
+  const { loading: authLoading, session } = useAuth()
+  // const { identify, signOut, update } = useUser()
   const [isReady, setIsReady] = useState(false)
   const [hasSeenLanding, setHasSeenLanding] = useState(false)
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false)
@@ -68,6 +71,31 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       initializeSession()
     }
   }, [authLoading])
+
+  // Keep Superwall user in sync with app auth state and onboarding flags
+  // useEffect(() => {
+  //   const syncIdentity = async () => {
+  //     try {
+  //       const userId = session?.user?.id
+  //       if (userId) {
+  //         await identify(userId)
+  //         await update((old: Record<string, any>) => ({
+  //           ...old,
+  //           hasSeenLanding,
+  //           hasCompletedOnboarding,
+  //         }))
+  //       } else {
+  //         await signOut()
+  //       }
+  //     } catch (e) {
+  //       console.warn('Superwall identity sync failed', e)
+  //     }
+  //   }
+  //   // Only run after initial session state loads
+  //   if (isReady) {
+  //     syncIdentity()
+  //   }
+  // }, [isReady, hasSeenLanding, hasCompletedOnboarding, session, identify, update, signOut])
 
   const markLandingSeen = async () => {
     await AsyncStorage.setItem('hasSeenLanding', 'true')

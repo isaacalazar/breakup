@@ -34,7 +34,7 @@ export default function AnalysisScreen() {
   const scaleAnim = useRef(new Animated.Value(0.9)).current
   const fadeAnim = useRef(new Animated.Value(0)).current
   
-  const radius = Math.min(screenWidth * 0.22, 100)
+  const radius = Math.min(screenWidth * 0.35, 140)
   const strokeWidth = 8
   const circumference = 2 * Math.PI * radius
 
@@ -127,9 +127,6 @@ export default function AnalysisScreen() {
 
 
 
-  const handleBack = () => {
-    router.back()
-  }
 
   const strokeDashoffset = circumference - (progress / 100) * circumference
 
@@ -138,7 +135,7 @@ export default function AnalysisScreen() {
   // Analysis results screen (shown after analysis completes)
   if (isComplete && showResults && analysisResult) {
     return (
-      <OnboardingContainer step={8} totalSteps={12} onBack={handleBack} hideProgress={true}>
+      <OnboardingContainer step={9} totalSteps={12} showBackButton={false} hideProgress={true}>
         <View style={styles.container}>
           <View style={styles.resultsContainer}>
             <View style={styles.revealHeader}>
@@ -207,10 +204,6 @@ export default function AnalysisScreen() {
                 )}
               </View>
             </View>
-
-            <Text style={styles.disclaimer}>
-              * This result is an indication only, not a medical diagnosis.
-            </Text>
           </View>
 
           <View style={styles.buttonContainer}>
@@ -226,7 +219,7 @@ export default function AnalysisScreen() {
 
 
   return (
-    <OnboardingContainer step={8} totalSteps={12} onBack={handleBack}>
+    <OnboardingContainer step={9} totalSteps={12} showBackButton={false} hideProgress={true}>
       <View style={styles.container}>
         <View style={styles.loadingContainer}>
           <Text style={styles.title}>Analyzing Your Responses</Text>
@@ -241,7 +234,7 @@ export default function AnalysisScreen() {
               }
             ]}
           >
-            <Svg width={radius * 2 + 20} height={radius * 2 + 20}>
+            <Svg width={radius * 2 + 40} height={radius * 2 + 40}>
               <Defs>
                 <LinearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                   <Stop offset="0%" stopColor="#60a5fa" stopOpacity="1" />
@@ -251,8 +244,8 @@ export default function AnalysisScreen() {
               </Defs>
               
               <Circle
-                cx={radius + 10}
-                cy={radius + 10}
+                cx={radius + 20}
+                cy={radius + 20}
                 r={radius}
                 stroke="rgba(255,255,255,0.1)"
                 strokeWidth={strokeWidth}
@@ -260,8 +253,8 @@ export default function AnalysisScreen() {
               />
               
               <AnimatedCircle
-                cx={radius + 10}
-                cy={radius + 10}
+                cx={radius + 20}
+                cy={radius + 20}
                 r={radius}
                 stroke="url(#progressGradient)"
                 strokeWidth={strokeWidth}
@@ -269,7 +262,7 @@ export default function AnalysisScreen() {
                 strokeDasharray={circumference}
                 strokeDashoffset={strokeDashoffset}
                 strokeLinecap="round"
-                transform={`rotate(-90 ${radius + 10} ${radius + 10})`}
+                transform={`rotate(-90 ${radius + 20} ${radius + 20})`}
               />
             </Svg>
             
@@ -303,18 +296,25 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
     marginBottom: 12,
+    marginTop: -60,
   },
   subtitle: {
     color: 'rgba(255,255,255,0.7)',
     fontSize: 16,
     textAlign: 'center',
     fontWeight: '400',
-    marginBottom: 60,
+    marginBottom: 80,
   },
   progressWrapper: {
     position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
+    alignSelf: 'center',
+  },
+  logoWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 60,
   },
   progressText: {
     position: 'absolute',
@@ -350,7 +350,6 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: '700',
     textAlign: 'center',
-    marginBottom: 16,
   },
   completedSubtitle: {
     color: 'rgba(255,255,255,0.8)',
@@ -422,16 +421,16 @@ const styles = StyleSheet.create({
   },
   checkmark: {
     backgroundColor: '#22c55e',
-    borderRadius: 12,
-    width: 24,
-    height: 24,
+    borderRadius: 14,
+    width: 28,
+    height: 28,
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 12,
   },
   checkmarkText: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '800',
   },
   revealSubtitle: {
