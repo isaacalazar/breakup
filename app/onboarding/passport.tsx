@@ -1,11 +1,11 @@
+import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
 import { router } from 'expo-router'
-import { Dimensions, StyleSheet, Text, View } from 'react-native'
-import { OnboardingButton } from '../../src/components/onboarding/OnboardingButton'
-import { OnboardingContainer } from '../../src/components/onboarding/OnboardingContainer'
-import { useOnboardingStore } from '../../src/stores/onboardingStore'
+import { Alert, Dimensions, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useAuth } from '../../src/providers/AuthProvider'
 import { useSession } from '../../src/providers/SessionProvider'
+import { signInWithGoogle } from '../../src/services/googleSignIn'
+import { useOnboardingStore } from '../../src/stores/onboardingStore'
 
 export default function PassportScreen() {
   const store = useOnboardingStore()
@@ -14,6 +14,27 @@ export default function PassportScreen() {
   const { markOnboardingComplete } = useSession()
 
   const handleContinue = async () => {
+    // Check if user is authenticated before completing onboarding
+    if (!session) {
+      // Trigger Google sign-in if not authenticated
+      try {
+        const result = await signInWithGoogle()
+        
+        if (result.success) {
+          // Continue with onboarding completion after successful sign in
+          await saveProfile()
+          await markOnboardingComplete()
+          router.replace('/(tabs)/home')
+        } else {
+          Alert.alert('Sign In Required', result.error || 'Please sign in to complete your profile')
+        }
+      } catch (error: any) {
+        console.error('Google Sign-In error:', error)
+        Alert.alert('Error', 'An unexpected error occurred during sign in')
+      }
+      return
+    }
+    
     await saveProfile()
     await markOnboardingComplete()
     router.replace('/(tabs)/home')
@@ -32,114 +53,222 @@ export default function PassportScreen() {
     }) : '02/25'
   }
 
+  const { width } = Dimensions.get('window')
+  const cardWidth = Math.min(width - 60, 320)
+  const cardHeight = cardWidth * 1.25
+
   return (
-    <OnboardingContainer step={8} totalSteps={9} onBack={handleBack}>
-      <View className="flex-1 px-8 pt-8">
-        {/* Header */}
-        <View className="items-center mb-12">
-          <Text className="text-white text-3xl font-bold mb-4">Good News!</Text>
-          <Text className="text-white/80 text-center text-base leading-6">
+    <LinearGradient 
+      colors={['#2D1B69', '#1E0A3C', '#0A0617']}
+      style={{ flex: 1 }}
+    >
+      {/* Header */}
+      <View className="pt-14 px-6">
+        <Pressable onPress={handleBack} className="mb-10">
+          <Ionicons name="chevron-back" size={26} color="white" />
+        </Pressable>
+        
+        <View className="items-center mb-10">
+          <Text style={styles.headerTitle}>Good News!</Text>
+          <Text style={styles.headerSubtitle}>
             We've built your profile. Your progress will be{'\n'}tracked here.
           </Text>
         </View>
+      </View>
 
-        {/* Card with Gradient - tuned to brand (cyan → blue → purple) */}
-        <View className="items-center mb-12">
-          <CardGradient formatDate={formatDate} goalDays={(selectedGoalDays ?? parseInt(goalDays)) || 0} />
-        </View>
+      {/* Card Container */}
+      <View className="flex-1 items-center justify-center px-7">
+        <View className="relative">
+          {/* Star decoration */}
+          <View className="absolute -top-3 -right-3 z-10">
+            <Text style={{ fontSize: 36 }}>✨</Text>
+          </View>
 
+          {/* Passport Card */}
+          <View style={[styles.cardContainer, { width: cardWidth, height: cardHeight }]}>
+            {/* Gradient Section */}
+            <LinearGradient
+              colors={['#FF6B35', '#FF4E7C', '#B73AED']}
+              start={{ x: 0, y: 1 }}
+              end={{ x: 1, y: 0 }}
+              style={[styles.cardGradient, { height: cardHeight - 75 }]}
+            >
+              {/* Card Header Icons */}
+              <View className="flex-row justify-between items-start">
+                <View style={styles.iconContainer}>
+                  <Text style={styles.iconText}>EX</Text>
+                </View>
+                <View style={styles.profileIcon}>
+                  <Ionicons name="person-outline" size={18} color="white" />
+                </View>
+              </View>
 
-        {/* Primary CTA (match onboarding button style) */}
-        <View className="flex-1 justify-end pb-16">
-          <OnboardingButton title="Next" onPress={handleContinue} />
+              {/* Main Content */}
+              <View className="flex-1 justify-end pb-5">
+                <Text style={styles.streakLabel}>Active Streak</Text>
+                <View className="flex-row items-baseline">
+                  <Text style={styles.streakNumber}>0</Text>
+                  <Text style={styles.streakDays}> days</Text>
+                </View>
+              </View>
+            </LinearGradient>
+
+            {/* Bottom Dark Section */}
+            <View style={styles.bottomSection}>
+              <View className="flex-row justify-end items-center">
+                <View className="items-end">
+                  <Text style={styles.dateLabel}>Free since</Text>
+                  <Text style={styles.dateValue}>{formatDate()}</Text>
+                </View>
+              </View>
+            </View>
+          </View>
         </View>
       </View>
-    </OnboardingContainer>
-  )
-}
 
-// --- Presentational gradient card extracted for clarity ---
-function CardGradient({ formatDate, goalDays }: { formatDate: () => string; goalDays: number }) {
-  const { width } = Dimensions.get('window')
-  const cardWidth = Math.min(width - 48, 340)
-  const cardHeight = Math.round(cardWidth * 1.15)
 
-  return (
-    <View style={[styles.cardShadow, { width: cardWidth, borderRadius: 26, overflow: 'hidden' }]}>      
-      {/* Main vibrant gradient */}
-      <LinearGradient
-        colors={[ '#22D3EE', '#3B82F6', '#7C3AED' ]}
-        locations={[0, 0.45, 1]}
-        start={{ x: 0, y: 1 }}
-        end={{ x: 1, y: 0 }}
-        style={{ height: cardHeight - 68, padding: 24, justifyContent: 'space-between' }}
-      >
-        {/* Subtle highlight sweep */}
-        <LinearGradient
-          colors={[ 'rgba(255,255,255,0.25)', 'rgba(255,255,255,0)' ]}
-          start={{ x: 0.15, y: 0 }}
-          end={{ x: 0.9, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
-
-        {/* Diagonal glow blob */}
-        <LinearGradient
-          colors={[ 'rgba(255,255,255,0.22)', 'rgba(255,255,255,0)' ]}
-          style={{
-            position: 'absolute',
-            width: cardWidth,
-            height: cardWidth,
-            borderRadius: cardWidth,
-            top: -cardWidth * 0.35,
-            left: -cardWidth * 0.25,
-            transform: [{ rotate: '25deg' }]
-          }}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        />
-
-        {/* Header logo */}
-        <View className="flex-row justify-between items-start">
-          <View className="w-12 h-12 bg-white/20 rounded-full items-center justify-center">
-            <Text className="text-white font-bold text-base">EX</Text>
-          </View>
-        </View>
-
-        {/* Main content */}
-        <View>
-          <Text className="text-white text-base font-medium mb-2">Active Streak</Text>
-          <Text className="text-white text-5xl font-bold">0 days</Text>
-        </View>
-      </LinearGradient>
-
-      {/* Bottom footer strip */}
-      <LinearGradient
-        colors={[ 'rgba(13,8,31,0.85)', 'rgba(13,8,31,0.95)' ]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={{ paddingHorizontal: 24, paddingVertical: 18, borderTopWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}
-      >
-        <View className="flex-row justify-between items-end">
-          <View>
-            <Text className="text-white/70 text-sm">Goal</Text>
-            <Text className="text-white text-lg font-semibold">{goalDays} days</Text>
-          </View>
-          <View>
-            <Text className="text-white/70 text-sm text-right">Free since</Text>
-            <Text className="text-white text-xl font-bold">{formatDate()}</Text>
-          </View>
-        </View>
-      </LinearGradient>
-    </View>
+      {/* Next Button */}
+      <View className="px-6 pb-10">
+        <Pressable
+          onPress={handleContinue}
+          style={[styles.button, styles.buttonShadow]}
+          className="active:scale-98"
+        >
+          <Text style={styles.buttonText}>Next</Text>
+        </Pressable>
+      </View>
+    </LinearGradient>
   )
 }
 
 const styles = StyleSheet.create({
-  cardShadow: {
+  // Header Styles
+  headerTitle: {
+    color: 'white',
+    fontSize: 36,
+    fontWeight: '700',
+    marginBottom: 10,
+    letterSpacing: -0.5,
+  },
+  headerSubtitle: {
+    color: 'rgba(255, 255, 255, 0.75)',
+    fontSize: 16,
+    textAlign: 'center',
+    lineHeight: 22,
+    fontWeight: '400',
+  },
+  
+  // Card Styles
+  cardContainer: {
+    borderRadius: 18,
+    overflow: 'hidden',
+    backgroundColor: '#2a2a2a',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.32,
-    shadowRadius: 24,
-    elevation: 14,
+    shadowOpacity: 0.35,
+    shadowRadius: 18,
+    elevation: 12,
+  },
+  cardGradient: {
+    padding: 22,
+  },
+  
+  // Icon Styles
+  iconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  profileIcon: {
+    width: 36,
+    height: 36,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  
+  // Streak Styles
+  streakLabel: {
+    color: 'rgba(255, 255, 255, 0.85)',
+    fontSize: 15,
+    fontWeight: '500',
+    marginBottom: 6,
+    letterSpacing: 0.2,
+  },
+  streakNumber: {
+    color: 'white',
+    fontSize: 56,
+    fontWeight: '700',
+    letterSpacing: -1,
+    lineHeight: 56,
+  },
+  streakDays: {
+    color: 'white',
+    fontSize: 24,
+    fontWeight: '400',
+    marginLeft: 4,
+  },
+  
+  // Bottom Section Styles
+  bottomSection: {
+    backgroundColor: '#1a1a1a',
+    paddingHorizontal: 22,
+    paddingVertical: 18,
+    height: 75,
+    justifyContent: 'center',
+  },
+  dateLabel: {
+    color: '#888',
+    fontSize: 13,
+    fontWeight: '400',
+    marginBottom: 3,
+  },
+  dateValue: {
+    color: 'white',
+    fontSize: 22,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  
+  // Bottom Text Style
+  bottomText: {
+    color: 'white',
+    fontSize: 17,
+    fontWeight: '500',
+    textAlign: 'center',
+    letterSpacing: -0.2,
+  },
+  
+  // Button Styles
+  button: {
+    backgroundColor: '#0084FF',
+    paddingVertical: 16,
+    borderRadius: 28,
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+    letterSpacing: 0.2,
+  },
+  buttonShadow: {
+    shadowColor: '#0084FF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 6,
   },
 })

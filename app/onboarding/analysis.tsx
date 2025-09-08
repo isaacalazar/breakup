@@ -94,7 +94,7 @@ export default function AnalysisScreen() {
   }, [progressAnim, scaleAnim, fadeAnim])
 
   const handleNext = () => {
-    router.push('/onboarding/danger-carousel')
+    router.push('/onboarding/custom-plan')
   }
 
   const generateAnalysisResults = async () => {

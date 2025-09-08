@@ -38,7 +38,7 @@ export function OnboardingButton({
         disabled 
           ? 'text-white/50'
           : isPrimary
-          ? 'text-purple-800'
+          ? 'text-gray-900'
           : 'text-white'
       }`}>
         {title}

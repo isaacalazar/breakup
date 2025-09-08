@@ -1,10 +1,11 @@
+import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
 import { router } from 'expo-router'
 import { Alert, Pressable, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import "../global.css"
 import { useSession } from '../src/providers/SessionProvider'
 import { signInWithGoogle } from '../src/services/googleSignIn'
-import "../global.css"
 
 export default function LandingScreen() {
   const { markLandingSeen } = useSession()
@@ -49,40 +50,29 @@ export default function LandingScreen() {
         colors={['#2D1B69', '#1E0A3C', '#0A0617']} 
         style={{ flex: 1 }}
       >
-        {/* Background Highlights */}
+        {/* Bottom gradient overlay for button area */}
+        <LinearGradient
+          colors={['transparent', 'rgba(16, 8, 28, 0.8)', '#100820']}
+          locations={[0, 0.7, 1]}
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: 200,
+          }}
+        />
+        {/* Background Orb - QUITTR Style */}
         <View style={{
           position: 'absolute',
-          top: 120,
-          right: -50,
-          width: 200,
-          height: 200,
-          borderRadius: 100,
-          backgroundColor: 'rgba(255,255,255,0.03)',
+          top: '30%',
+          right: -100,
+          width: 300,
+          height: 300,
+          borderRadius: 150,
+          backgroundColor: 'rgba(124,58,237,0.15)',
+          transform: [{ scale: 1.5 }]
         }} />
-        <View style={{
-          position: 'absolute',
-          top: 300,
-          left: -80,
-          width: 160,
-          height: 160,
-          borderRadius: 80,
-          backgroundColor: 'rgba(255,255,255,0.02)',
-        }} />
-        <View style={{
-          position: 'absolute',
-          bottom: 200,
-          right: 20,
-          width: 120,
-          height: 120,
-          borderRadius: 60,
-          backgroundColor: 'rgba(124,58,237,0.1)',
-        }} />
-
-        {/* Subtle dots */}
-        <View style={{ position: 'absolute', top: 150, left: 80, width: 3, height: 3, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 1.5 }} />
-        <View style={{ position: 'absolute', top: 200, right: 120, width: 2, height: 2, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 1 }} />
-        <View style={{ position: 'absolute', top: 350, left: 60, width: 2, height: 2, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 1 }} />
-        <View style={{ position: 'absolute', bottom: 300, left: 40, width: 3, height: 3, backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 1.5 }} />
 
         <SafeAreaView style={{ flex: 1 }}>
           <View style={{ flex: 1, paddingHorizontal: 32, paddingTop: 40 }}>
@@ -99,39 +89,37 @@ export default function LandingScreen() {
             </View>
 
             {/* Main Content */}
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <View style={{ flex: 1, justifyContent: 'center' }}>
               {/* Hero Section */}
-              <View style={{ alignItems: 'center', marginBottom: 80 }}>
+              <View style={{ marginBottom: 60 }}>
                 <Text style={{ 
                   color: 'white', 
-                  fontSize: 48, 
-                  fontWeight: '900',
-                  textAlign: 'center',
-                  marginBottom: 20,
-                  lineHeight: 52
+                  fontSize: 42, 
+                  fontWeight: '800',
+                  marginBottom: 24,
+                  lineHeight: 48
                 }}>
                   Welcome!
                 </Text>
                 <Text style={{ 
-                  color: 'rgba(255,255,255,0.8)', 
+                  color: 'rgba(255,255,255,0.75)', 
                   fontSize: 18,
-                  textAlign: 'center',
-                  lineHeight: 26,
-                  paddingHorizontal: 20
+                  lineHeight: 28,
+                  fontWeight: '400'
                 }}>
-                  Let's start by finding what support you need most right now
+                  Let's start by finding out if{'\n'}you need support with your{'\n'}healing journey
                 </Text>
               </View>
 
-              {/* Social Proof */}
-              <View style={{ marginBottom: 80 }}>
-                <Text style={{ 
-                  color: 'rgba(255,255,255,0.6)', 
-                  fontSize: 16, 
-                  textAlign: 'center' 
-                }}>
-                  🕊️ ⭐⭐⭐⭐⭐ 🕊️
-                </Text>
+              {/* Social Proof - QUITTR Style */}
+              <View style={{ marginBottom: 60 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={{ fontSize: 20 }}>🕊️</Text>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Text key={star} style={{ fontSize: 16 }}>⭐</Text>
+                  ))}
+                  <Text style={{ fontSize: 20 }}>🕊️</Text>
+                </View>
               </View>
             </View>
 
@@ -152,7 +140,7 @@ export default function LandingScreen() {
                 justifyContent: 'center'
               }}
             >
-              <Text style={{ color: 'white', fontSize: 16, marginRight: 12 }}>🍎</Text>
+              <Ionicons name="logo-apple" size={20} color="white" style={{ marginRight: 12 }} />
               <Text style={{ 
                 color: 'white', 
                 fontSize: 16, 
@@ -177,7 +165,7 @@ export default function LandingScreen() {
                 justifyContent: 'center'
               }}
             >
-              <Text style={{ color: 'white', fontSize: 16, marginRight: 12 }}>G</Text>
+              <Ionicons name="logo-google" size={20} color="white" style={{ marginRight: 12 }} />
               <Text style={{ 
                 color: 'white', 
                 fontSize: 16, 

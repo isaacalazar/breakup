@@ -23,8 +23,8 @@ export function OnboardingContainer({
   hideProgress = false
 }: OnboardingContainerProps) {
   const gradientColors = variant === 'danger' 
-    ? ['#8B0000', '#B22222', '#DC143C'] // Dark red to lighter red gradient
-    : ['#2D1B69', '#1E0A3C', '#0A0617']; // Original purple gradient
+    ? ['#8B0000', '#B22222', '#DC143C'] as const // Dark red to lighter red gradient
+    : ['#2D1B69', '#1E0A3C', '#0A0617'] as const; // Original purple gradient
 
   return (
     <LinearGradient 

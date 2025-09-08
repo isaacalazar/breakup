@@ -46,11 +46,16 @@
             "deploymentTarget": "15.1"
           }
         }
-      ],
-      "expo-web-browser"
+      ]
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "6b9657ca-7a54-4440-bad6-c6a607f82968"
+      }
     }
   }
 }
