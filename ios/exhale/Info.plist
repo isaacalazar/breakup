@@ -28,7 +28,12 @@
         <key>CFBundleURLSchemes</key>
         <array>
           <string>exhale</string>
-          <string>tech.raydar.exhale</string>
+        </array>
+      </dict>
+      <dict>
+        <key>CFBundleURLSchemes</key>
+        <array>
+          <string>com.googleusercontent.apps.679911722386-hd6n0rcmpbc2qrt5rbcrh7srbqeqb9n2</string>
         </array>
       </dict>
       <dict>

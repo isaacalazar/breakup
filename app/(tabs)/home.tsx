@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons'
+import * as Haptics from 'expo-haptics'
 import { LinearGradient } from 'expo-linear-gradient'
 import { router } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { Animated, Dimensions, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import Svg, { Circle } from 'react-native-svg'
+import SkiaBadge from '../../src/components/SkiaBadge'
 import { useAuth } from '../../src/providers/AuthProvider'
 import { useSession } from '../../src/providers/SessionProvider'
 
@@ -169,6 +170,7 @@ export default function HomeScreen() {
   const currentMessage = getMotivationalMessage()
 
   const handleEmergencySupport = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
     router.push('/panic')
   }
 
@@ -256,45 +258,6 @@ export default function HomeScreen() {
     })
   }
 
-  // Dynamic styles that need circleSize
-  const dynamicStyles = {
-    orbContainer: {
-      position: 'relative' as const,
-      alignItems: 'center' as const,
-      justifyContent: 'center' as const,
-      width: circleSize,
-      height: circleSize,
-    },
-    mainOrb: {
-      width: circleSize - 60,
-      height: circleSize - 60,
-      borderRadius: (circleSize - 60) / 2,
-      position: 'absolute' as const,
-      shadowColor: '#FF6B6B',
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.6,
-      shadowRadius: 30,
-      elevation: 20,
-    },
-    orbGradient: {
-      width: '100%' as const,
-      height: '100%' as const,
-      borderRadius: (circleSize - 60) / 2,
-    },
-    innerGlow: {
-      position: 'absolute' as const,
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      borderRadius: (circleSize - 60) / 2,
-    },
-    glowGradient: {
-      width: '100%' as const,
-      height: '100%' as const,
-      borderRadius: (circleSize - 60) / 2,
-    },
-  }
 
   if (loading) {
     return (
@@ -432,93 +395,52 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          {/* Main Gradient Orb */}
-          <View style={styles.progressContainer}>
-            <View style={dynamicStyles.orbContainer}>
-              {/* Main Gradient Orb */}
+          {/* Main Metallic Progress Circle */}
+          <View style={styles.mainProgressContainer}>
+            <View style={styles.metallicCircleContainer}>
+              {/* Metallic progress circle */}
               <Animated.View 
                 style={[
-                  dynamicStyles.mainOrb,
+                  styles.metallicCircle,
                   {
-                    transform: [
-                      { scale: pulseAnim },
-                    ],
-                    opacity: blob1.interpolate({
-                      inputRange: [0, 0.5, 1],
-                      outputRange: [1, 0.95, 1],
-                    }),
+                    transform: [{ scale: pulseAnim }],
                   },
                 ]}
               >
-                <LinearGradient
-                  colors={[
-                    '#FF6B6B', // Red-pink
-                    '#4ECDC4', // Teal
-                    '#45B7D1', // Blue
-                    '#96CEB4', // Green
-                    '#FECA57', // Yellow
-                    '#FF9FF3', // Pink
-                    '#54A0FF', // Light blue
-                  ]}
-                  locations={[0, 0.15, 0.3, 0.45, 0.6, 0.8, 1]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={dynamicStyles.orbGradient}
-                />
-                
-                {/* Inner glow effect */}
-                <View style={dynamicStyles.innerGlow}>
-                  <LinearGradient
-                    colors={['rgba(255, 255, 255, 0.3)', 'rgba(255, 255, 255, 0.05)', 'transparent']}
-                    style={dynamicStyles.glowGradient}
-                  />
-                </View>
+                <SkiaBadge size={240} variant="iridescent" />
               </Animated.View>
+            </View>
 
-              {/* Outer progress ring */}
-              <Svg width={circleSize} height={circleSize} style={styles.progressRing}>
-                <Circle
-                  cx={circleSize / 2}
-                  cy={circleSize / 2}
-                  r={radius + 20}
-                  stroke="rgba(255, 255, 255, 0.1)"
-                  strokeWidth={2}
-                  fill="none"
-                  strokeDasharray="8 4"
-                />
-                <Circle
-                  cx={circleSize / 2}
-                  cy={circleSize / 2}
-                  r={radius + 20}
-                  stroke="#22D3EE"
-                  strokeWidth={2}
-                  fill="none"
-                  strokeDasharray={`${(progressPercentage / 100) * (radius + 20) * 2 * Math.PI * 0.8} ${(radius + 20) * 2 * Math.PI}`}
-                  strokeLinecap="round"
-                  transform={`rotate(-90 ${circleSize / 2} ${circleSize / 2})`}
-                />
-              </Svg>
-              
-              {/* Center Content */}
-              <View style={styles.orbContent}>
-                <Text style={styles.daysLabel}>You&apos;ve been no-contact for:</Text>
-                <Text style={styles.daysNumber}>{daysSinceContact}</Text>
-                <Text style={styles.daysText}>days</Text>
-                
-                {/* Timer */}
-                <View style={styles.timerContainer}>
-                  <Text style={styles.timerText}>
-                    {timeRemaining.hours > 0 && `${timeRemaining.hours}h `}
-                    {timeRemaining.minutes}m {timeRemaining.seconds}s
-                  </Text>
+            {/* Center Stats */}
+            <View style={styles.centerStats}>
+              <Text style={styles.mainLabel}>You've been no-contact for:</Text>
+              <View style={styles.timeDisplay}>
+                <Text style={styles.mainTime}>
+                  {daysSinceContact}d {timeRemaining.hours}hrs {timeRemaining.minutes}mins
+                </Text>
+                <View style={styles.secondsContainer}>
+                  <Text style={styles.seconds}>{timeRemaining.seconds}s</Text>
                 </View>
               </View>
             </View>
-          </View>
-
-          {/* Motivational Message */}
-          <View style={styles.messageContainer}>
-            <Text style={styles.motivationalMessage}>{currentMessage} </Text>
+            
+            {/* Floating Panic Button */}
+            <Pressable 
+              style={styles.panicButton}
+              onPress={handleEmergencySupport}
+              onLongPress={() => {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)
+                handleEmergencySupport()
+              }}
+            >
+              <LinearGradient
+                colors={['#FF4444', '#CC0000']}
+                style={styles.panicGradient}
+              >
+                <Ionicons name="warning" size={20} color="white" />
+                <Text style={styles.panicText}>PANIC</Text>
+              </LinearGradient>
+            </Pressable>
           </View>
 
           {/* Progress Stats */}
@@ -542,34 +464,97 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          {/* Action Buttons */}
-          <View style={styles.actionButtons}>
+          {/* Milestones Button */}
+          <View style={styles.milestonesContainer}>
             <Pressable 
-              style={[styles.actionButton, styles.communityButton]}
-              onPress={handleSupport}
+              style={styles.milestonesButton}
+              onPress={() => {
+                // Navigate to milestones page
+                router.push('/milestones')
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+              }}
             >
-              <Ionicons name="people" size={18} color="#A855F7" />
-              <Text style={styles.actionButtonText}>Community</Text>
-      </Pressable>
-
-            <Pressable 
-              style={[styles.actionButton, styles.journalButton]}
-              onPress={handleJournal}
-            >
-              <Ionicons name="book" size={18} color="#3B82F6" />
-              <Text style={styles.actionButtonText}>Journal</Text>
-      </Pressable>
+              <View style={styles.milestonesIcon}>
+                <Ionicons name="trophy" size={24} color="#FFD700" />
+              </View>
+              <View style={styles.milestonesContent}>
+                <Text style={styles.milestonesTitle}>Milestones</Text>
+                <Text style={styles.milestonesSubtitle}>
+                  {daysSinceContact >= finalGoalDays ? 'All achievements unlocked!' :
+                   daysSinceContact >= 90 ? '4/5 achievements earned' :
+                   daysSinceContact >= 30 ? '3/5 achievements earned' :
+                   daysSinceContact >= 7 ? '2/5 achievements earned' :
+                   daysSinceContact >= 1 ? '1/5 achievements earned' :
+                   '0/5 achievements earned'}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="rgba(255, 255, 255, 0.5)" />
+            </Pressable>
           </View>
 
-          {/* Emergency Support Button */}
-          <View style={styles.emergencyContainer}>
+          {/* Main Action Buttons */}
+          <View style={styles.mainActions}>
             <Pressable 
-              style={styles.emergencyButton}
+              style={styles.actionCircle}
               onPress={handleEmergencySupport}
             >
-              <Ionicons name="warning" size={16} color="white" />
-              <Text style={styles.emergencyText}>Emergency Support</Text>
-      </Pressable>
+              <View style={styles.actionIcon}>
+                <Ionicons name="hand-right" size={28} color="white" />
+              </View>
+              <Text style={styles.actionLabel}>Pledge</Text>
+            </Pressable>
+
+            <Pressable 
+              style={styles.actionCircle}
+              onPress={handleJournal}
+            >
+              <View style={styles.actionIcon}>
+                <Ionicons name="leaf" size={28} color="white" />
+              </View>
+              <Text style={styles.actionLabel}>Meditate</Text>
+            </Pressable>
+
+            <Pressable 
+              style={styles.actionCircle}
+              onPress={() => {
+                // Reset functionality could go here
+                console.log('Reset pressed')
+              }}
+            >
+              <View style={styles.actionIcon}>
+                <Ionicons name="refresh" size={28} color="white" />
+              </View>
+              <Text style={styles.actionLabel}>Reset</Text>
+            </Pressable>
+
+            <Pressable 
+              style={styles.actionCircle}
+              onPress={handleSupport}
+            >
+              <View style={styles.actionIcon}>
+                <Ionicons name="ellipsis-horizontal" size={28} color="white" />
+              </View>
+              <Text style={styles.actionLabel}>More</Text>
+            </Pressable>
+          </View>
+
+          {/* Progress Bar */}
+          <View style={styles.progressBarContainer}>
+            <View style={styles.progressBarHeader}>
+              <Text style={styles.progressPercentage}>{Math.round(progressPercentage)}%</Text>
+              <Text style={styles.progressLabel}>Brain Rewiring</Text>
+              <Text style={styles.goalDate}>Goal on {new Date(Date.now() + (finalGoalDays - daysSinceContact) * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</Text>
+            </View>
+            <View style={styles.progressBar}>
+              <View style={[styles.progressFill, { width: `${Math.min(progressPercentage, 100)}%` }]} />
+            </View>
+          </View>
+
+          {/* Motivational Message */}
+          <View style={styles.motivationContainer}>
+            <Text style={styles.motivationText}>
+              ✨ {currentMessage} ✨
+            </Text>
           </View>
         </ScrollView>
     </SafeAreaView>
@@ -587,16 +572,20 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   appTitle: {
-    fontSize: 28,
-    fontWeight: '700',
+    fontSize: 32,
+    fontWeight: '800',
     color: 'white',
-    letterSpacing: -0.5,
+    letterSpacing: -1,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   subtitle: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.6)',
-    fontWeight: '500',
-    marginTop: 2,
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontWeight: '600',
+    marginTop: 4,
+    letterSpacing: 0.2,
   },
   settingsButton: {
     width: 40,
@@ -638,68 +627,101 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
   },
-  progressContainer: {
+  // Main Progress Container
+  mainProgressContainer: {
     alignItems: 'center',
     marginBottom: 40,
     paddingHorizontal: 20,
   },
-  progressRing: {
-    position: 'absolute',
-    zIndex: 1,
-  },
-  orbContent: {
-    position: 'absolute',
+  metallicCircleContainer: {
+    position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 3,
+    marginBottom: 20,
   },
-  daysLabel: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: '500',
-    marginBottom: 8,
-    textAlign: 'center',
-    opacity: 0.9,
+  metallicCircle: {
+    shadowColor: '#4ECDC4',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 15,
   },
-  daysNumber: {
-    color: 'white',
-    fontSize: 64,
-    fontWeight: '800',
-    letterSpacing: -3,
-    lineHeight: 64,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 8,
+  centerStats: {
+    alignItems: 'center',
+    paddingHorizontal: 20,
   },
-  daysText: {
-    color: 'white',
+  mainLabel: {
+    color: 'rgba(255, 255, 255, 0.9)',
     fontSize: 18,
     fontWeight: '600',
-    marginTop: 4,
-    opacity: 0.95,
-  },
-  timerContainer: {
-    marginTop: 12,
-    alignItems: 'center',
-  },
-  timerText: {
-    color: 'white',
-    fontSize: 13,
-    fontWeight: '600',
-    letterSpacing: 0.5,
-    opacity: 0.8,
-  },
-  messageContainer: {
-    paddingHorizontal: 24,
-    marginBottom: 32,
-  },
-  motivationalMessage: {
-    color: 'white',
-    fontSize: 16,
+    marginBottom: 16,
     textAlign: 'center',
-    fontWeight: '500',
-    lineHeight: 22,
-    letterSpacing: -0.2,
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  timeDisplay: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 12,
+  },
+  mainTime: {
+    color: 'white',
+    fontSize: 32,
+    fontWeight: '800',
+    letterSpacing: -1,
+    textShadowColor: 'rgba(0, 0, 0, 0.4)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+  secondsContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  seconds: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: -0.3,
+  },
+
+  // Floating Panic Button
+  panicButton: {
+    position: 'absolute',
+    top: -15,
+    right: -15,
+    zIndex: 10,
+    shadowColor: '#FF4444',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  panicGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  panicText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   statsContainer: {
     flexDirection: 'row',
@@ -710,90 +732,205 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 16,
-    padding: 18,
+    borderRadius: 20,
+    padding: 20,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   progressCard: {
-    backgroundColor: 'rgba(34, 211, 238, 0.1)',
-    borderColor: 'rgba(34, 211, 238, 0.2)',
+    backgroundColor: 'rgba(34, 211, 238, 0.15)',
+    borderColor: 'rgba(34, 211, 238, 0.3)',
   },
   statLabel: {
-    color: 'rgba(255, 255, 255, 0.5)',
-    fontSize: 10,
-    fontWeight: '600',
-    marginBottom: 6,
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontSize: 11,
+    fontWeight: '700',
+    marginBottom: 8,
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 1.2,
   },
   statValue: {
     color: 'white',
-    fontSize: 24,
-    fontWeight: '700',
-    letterSpacing: -0.5,
-    lineHeight: 24,
+    fontSize: 28,
+    fontWeight: '800',
+    letterSpacing: -1,
+    lineHeight: 28,
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   progressValue: {
     color: '#22D3EE',
   },
   statUnit: {
     color: 'rgba(255, 255, 255, 0.7)',
-    fontSize: 11,
-    fontWeight: '500',
-    marginTop: 2,
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 4,
+    letterSpacing: 0.3,
   },
-  actionButtons: {
-    flexDirection: 'row',
+  
+  // Achievements Section
+  achievementsContainer: {
     paddingHorizontal: 24,
+    marginBottom: 32,
+  },
+  achievementsTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: 'white',
     marginBottom: 16,
+    textAlign: 'center',
+    letterSpacing: -0.3,
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+  },
+  badgeItem: {
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  badgeLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.4)',
+    textAlign: 'center',
+    letterSpacing: -0.2,
+  },
+  badgeLabelActive: {
+    color: 'rgba(255, 255, 255, 0.8)',
+  },
+
+  // Milestones Button
+  milestonesContainer: {
+    paddingHorizontal: 24,
+    marginBottom: 32,
+  },
+  milestonesButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.3)',
+    borderRadius: 16,
+    padding: 16,
     gap: 12,
   },
-  actionButton: {
+  milestonesIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 215, 0, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  milestonesContent: {
     flex: 1,
+  },
+  milestonesTitle: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 4,
+    letterSpacing: -0.2,
+  },
+  milestonesSubtitle: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  // Main Actions
+  mainActions: {
     flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingHorizontal: 40,
+    marginBottom: 40,
+  },
+  actionCircle: {
+    alignItems: 'center',
+    gap: 12,
+  },
+  actionIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: 16,
-    gap: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
-  communityButton: {
-    backgroundColor: 'rgba(168, 85, 247, 0.15)',
-    borderColor: 'rgba(168, 85, 247, 0.3)',
-  },
-  journalButton: {
-    backgroundColor: 'rgba(59, 130, 246, 0.15)',
-    borderColor: 'rgba(59, 130, 246, 0.3)',
-  },
-  actionButtonText: {
+  actionLabel: {
     color: 'white',
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
-    letterSpacing: -0.2,
   },
-  emergencyContainer: {
+
+  // Progress Bar
+  progressBarContainer: {
     paddingHorizontal: 24,
-    marginBottom: 20,
+    marginBottom: 32,
   },
-  emergencyButton: {
+  progressBarHeader: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#DC2626',
-    paddingVertical: 16,
-    borderRadius: 16,
-    gap: 8,
+    marginBottom: 12,
   },
-  emergencyText: {
+  progressPercentage: {
+    color: '#4ECDC4',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  progressLabel: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  goalDate: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  progressBar: {
+    height: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#4ECDC4',
+    borderRadius: 3,
+  },
+
+  // Motivation
+  motivationContainer: {
+    paddingHorizontal: 32,
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  motivationText: {
     color: 'white',
-    fontSize: 15,
+    fontSize: 18,
     fontWeight: '600',
-    letterSpacing: -0.2,
+    textAlign: 'center',
+    lineHeight: 24,
+    letterSpacing: 0.2,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+    opacity: 0.95,
   },
   loadingText: {
     color: 'white',
