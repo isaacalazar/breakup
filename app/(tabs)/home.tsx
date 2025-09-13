@@ -6,16 +6,35 @@ import { Animated, Dimensions, Pressable, ScrollView, StyleSheet, Text, View } f
 import { SafeAreaView } from 'react-native-safe-area-context'
 import Svg, { Circle } from 'react-native-svg'
 import { useAuth } from '../../src/providers/AuthProvider'
-import { useOnboardingStore } from '../../src/stores/onboardingStore'
+import { useSession } from '../../src/providers/SessionProvider'
 
 export default function HomeScreen() {
-  const { session } = useAuth()
-  const store = useOnboardingStore()
-  const { lastContactDate, breakupDate, selectedGoalDays, goalDays } = store
+  const { profile, loading } = useAuth()
+  const { hasCompletedOnboarding } = useSession()
+
+  // Check onboarding completion from both database and local storage
+  const isOnboardingComplete = profile?.onboarding_completed || hasCompletedOnboarding
+
+  // Debug logging
+  console.log('Home Screen State:', {
+    hasProfile: !!profile,
+    loading,
+    hasCompletedOnboarding,
+    dbOnboardingComplete: profile?.onboarding_completed,
+    isOnboardingComplete,
+    streakStart: profile?.streak_start,
+    goalDays: profile?.goal_days,
+    profileData: profile ? {
+      name: profile.name,
+      breakupDate: profile.breakup_date,
+      streakStart: profile.streak_start,
+      goalDays: profile.goal_days
+    } : null
+  })
   
   const [daysSinceContact, setDaysSinceContact] = useState(0)
   const [progressPercentage, setProgressPercentage] = useState(0)
-  const [timeRemaining, setTimeRemaining] = useState({ minutes: 0, seconds: 0 })
+  const [timeRemaining, setTimeRemaining] = useState({ hours: 0, minutes: 0, seconds: 0 })
 
   // Animation refs
   const blob1 = useRef(new Animated.Value(0)).current
@@ -27,7 +46,7 @@ export default function HomeScreen() {
   const radius = (circleSize - strokeWidth) / 2
   const circumference = radius * 2 * Math.PI
 
-  const finalGoalDays = selectedGoalDays || parseInt(goalDays) || 30
+  const finalGoalDays = profile?.goal_days || 30
 
   useEffect(() => {
     // Gentle breathing animation
@@ -63,50 +82,91 @@ export default function HomeScreen() {
     animateGradientShift()
 
     const calculateProgress = () => {
-      const contactDate = lastContactDate || breakupDate
-      if (contactDate) {
-        const start = new Date(contactDate)
+      const streakStart = profile?.streak_start
+      if (streakStart) {
+        const startTime = new Date(streakStart)
         const now = new Date()
-        const diffTime = Math.abs(now.getTime() - start.getTime())
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
         
-        setDaysSinceContact(diffDays)
-        setProgressPercentage(Math.min((diffDays / finalGoalDays) * 100, 100))
+        // Calculate the time difference in milliseconds
+        const diffTime = now.getTime() - startTime.getTime()
         
-        // Calculate time until next day milestone
-        const nextDayTime = new Date(start)
-        nextDayTime.setDate(nextDayTime.getDate() + diffDays + 1)
-        const timeUntilNext = nextDayTime.getTime() - now.getTime()
+        // Calculate days, hours, minutes, and seconds since no-contact started
+        const totalSeconds = Math.floor(diffTime / 1000)
+        const totalMinutes = Math.floor(totalSeconds / 60)
+        const totalHours = Math.floor(totalMinutes / 60)
+        const diffDays = Math.floor(totalHours / 24)
         
-        const hours = Math.floor(timeUntilNext / (1000 * 60 * 60))
-        const minutes = Math.floor((timeUntilNext % (1000 * 60 * 60)) / (1000 * 60))
-        const seconds = Math.floor((timeUntilNext % (1000 * 60)) / 1000)
+        // Ensure we don't show negative values if streak_start is in the future
+        const daysSince = Math.max(0, diffDays)
+        const hoursSince = Math.max(0, totalHours % 24)
+        const minutesSince = Math.max(0, totalMinutes % 60)
+        const secondsSince = Math.max(0, totalSeconds % 60)
         
-        setTimeRemaining({ 
-          minutes: hours * 60 + minutes, 
-          seconds 
-        })
+        setDaysSinceContact(daysSince)
+        setProgressPercentage(Math.min((daysSince / finalGoalDays) * 100, 100))
+        
+        // Calculate time until the next full day milestone
+        // Find the start of the next day after streak started
+        const nextDayMilestone = new Date(startTime)
+        nextDayMilestone.setDate(nextDayMilestone.getDate() + daysSince + 1)
+        nextDayMilestone.setHours(startTime.getHours(), startTime.getMinutes(), startTime.getSeconds(), startTime.getMilliseconds())
+        
+        const timeUntilNextDay = nextDayMilestone.getTime() - now.getTime()
+        
+        if (timeUntilNextDay > 0) {
+          const remainingHours = Math.floor(timeUntilNextDay / (1000 * 60 * 60))
+          const remainingMinutes = Math.floor((timeUntilNextDay % (1000 * 60 * 60)) / (1000 * 60))
+          const remainingSeconds = Math.floor((timeUntilNextDay % (1000 * 60)) / 1000)
+          
+          setTimeRemaining({ 
+            hours: remainingHours,
+            minutes: remainingMinutes, 
+            seconds: remainingSeconds 
+          })
+        } else {
+          // If we're past the milestone, show 0
+          setTimeRemaining({ hours: 0, minutes: 0, seconds: 0 })
+        }
+      } else {
+        // No streak data available
+        setDaysSinceContact(0)
+        setProgressPercentage(0)
+        setTimeRemaining({ hours: 0, minutes: 0, seconds: 0 })
       }
     }
 
     calculateProgress()
     const interval = setInterval(calculateProgress, 1000)
     return () => clearInterval(interval)
-  }, [lastContactDate, breakupDate, finalGoalDays, blob1, pulseAnim])
+  }, [profile?.streak_start, finalGoalDays, blob1, pulseAnim])
 
-  const strokeDashoffset = circumference - (progressPercentage / 100) * circumference
 
-  const motivationalMessages = [
-    "You're stronger than you know",
-    "Every day is progress",
-    "Healing takes time, be patient", 
-    "You're doing amazing",
-    "Keep going, you've got this",
-    "Growth happens outside comfort zones",
-    "Your future self will thank you",
-  ]
+  // Dynamic motivational messages based on progress
+  const getMotivationalMessage = () => {
+    const progressPercent = Math.round(progressPercentage)
+    const daysLeft = Math.max(finalGoalDays - daysSinceContact, 0)
+    
+    // Messages for different progress stages
+    if (daysSinceContact === 0) {
+      return "You're taking the first step. You're stronger than you know"
+    } else if (daysSinceContact === 1) {
+      return "Day 1 complete! Every journey begins with a single step"
+    } else if (daysSinceContact < 7) {
+      return "You're building momentum. Each day gets a little easier"
+    } else if (daysSinceContact < 30) {
+      return "You're making real progress. Keep going, you've got this"
+    } else if (daysSinceContact >= finalGoalDays) {
+      return "Incredible! You've reached your goal. You're unstoppable"
+    } else if (progressPercent >= 75) {
+      return `Almost there! Only ${daysLeft} days left to reach your goal`
+    } else if (progressPercent >= 50) {
+      return "You're halfway there! Your future self will thank you"
+    } else {
+      return "Every day is progress. Healing takes time, be patient"
+    }
+  }
 
-  const currentMessage = motivationalMessages[daysSinceContact % motivationalMessages.length]
+  const currentMessage = getMotivationalMessage()
 
   const handleEmergencySupport = () => {
     router.push('/panic')
@@ -124,22 +184,76 @@ export default function HomeScreen() {
     router.push('/(tabs)/profile')
   }
 
-  // Generate weekly progress dots
-  const generateWeeklyDots = () => {
-    const dots = []
-    for (let i = 0; i < 7; i++) {
-      const isActive = i < daysSinceContact % 7
-      dots.push(
-        <View
-          key={i}
-          style={[
-            styles.weekDot,
-            isActive ? styles.weekDotActive : styles.weekDotInactive
-          ]}
-        />
-      )
+  // Generate weekly progress tracker - shows daily progress with icons
+  const generateWeeklyTracker = () => {
+    const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+    
+    if (!profile?.streak_start) {
+      // No streak data, show all X's
+      return days.map((day, index) => (
+        <View key={index} style={styles.weekDayContainer}>
+          <View style={styles.weekDayIcon}>
+            <Text style={[styles.weekDayIconText, { color: 'rgba(255, 255, 255, 0.3)' }]}>
+              ×
+            </Text>
+          </View>
+          <Text style={styles.weekDayLabel}>{day}</Text>
+        </View>
+      ))
     }
-    return dots
+    
+    const now = new Date()
+    const streakStart = new Date(profile.streak_start)
+    
+    // Get the start of this week (Monday)
+    const today = new Date(now)
+    const dayOfWeek = today.getDay() // 0 = Sunday, 1 = Monday, etc.
+    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek // Adjust so Monday = 0
+    const startOfWeek = new Date(today)
+    startOfWeek.setDate(today.getDate() + mondayOffset)
+    startOfWeek.setHours(0, 0, 0, 0)
+    
+    return days.map((day, index) => {
+      let icon = '×' // Default X for not reached
+      let iconColor = 'rgba(255, 255, 255, 0.3)'
+      let backgroundColor = 'transparent'
+      
+      // Calculate the date for this day of the week
+      const dayDate = new Date(startOfWeek)
+      dayDate.setDate(startOfWeek.getDate() + index)
+      
+      // Check if this day has passed since streak started and is not in the future
+      const dayHasPassed = dayDate >= streakStart && dayDate <= now
+      const isToday = dayDate.toDateString() === now.toDateString()
+      const isFuture = dayDate > now
+      
+      if (dayHasPassed && !isToday) {
+        icon = '✓' // Checkmark for completed days
+        iconColor = '#22D3EE'
+        backgroundColor = 'rgba(34, 211, 238, 0.2)'
+      } else if (isToday && dayHasPassed) {
+        icon = '●' // Dot for today
+        iconColor = '#FECA57' // Yellow for today
+        backgroundColor = 'rgba(254, 202, 87, 0.2)'
+      } else if (dayDate < streakStart) {
+        // Day was before streak started
+        icon = '−' // Dash for pre-streak
+        iconColor = 'rgba(255, 255, 255, 0.2)'
+        backgroundColor = 'transparent'
+      }
+      // else stays as X for future days
+      
+      return (
+        <View key={index} style={styles.weekDayContainer}>
+          <View style={[styles.weekDayIcon, { backgroundColor }]}>
+            <Text style={[styles.weekDayIconText, { color: iconColor }]}>
+              {icon}
+            </Text>
+          </View>
+          <Text style={styles.weekDayLabel}>{day}</Text>
+        </View>
+      )
+    })
   }
 
   // Dynamic styles that need circleSize
@@ -182,7 +296,113 @@ export default function HomeScreen() {
     },
   }
 
+  if (loading) {
     return (
+      <LinearGradient 
+        colors={['#2D1B69', '#1E0A3C', '#0A0617']}
+        style={{ flex: 1 }}
+      >
+        <SafeAreaView style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={styles.loadingText}>Loading your progress...</Text>
+        </SafeAreaView>
+      </LinearGradient>
+    )
+  }
+
+  if (!profile && !isOnboardingComplete) {
+    return (
+      <LinearGradient 
+        colors={['#2D1B69', '#1E0A3C', '#0A0617']}
+        style={{ flex: 1 }}
+      >
+        <SafeAreaView style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
+          <Text style={styles.loadingText}>Welcome to Exhale!</Text>
+          <Text style={[styles.loadingText, { fontSize: 16, marginTop: 16, opacity: 0.7 }]}>
+            Complete your onboarding to get started
+        </Text>
+        <Pressable
+            onPress={() => router.replace('/onboarding')}
+            style={{ 
+              backgroundColor: '#3B82F6', 
+              paddingHorizontal: 24, 
+              paddingVertical: 12, 
+              borderRadius: 12, 
+              marginTop: 24 
+            }}
+          >
+            <Text style={{ color: 'white', fontWeight: '600' }}>Start Onboarding</Text>
+        </Pressable>
+      </SafeAreaView>
+      </LinearGradient>
+    )
+  }
+
+  // If user has completed onboarding but profile isn't loaded yet, show loading
+  if (!profile && isOnboardingComplete) {
+    return (
+      <LinearGradient 
+        colors={['#2D1B69', '#1E0A3C', '#0A0617']}
+        style={{ flex: 1 }}
+      >
+        <SafeAreaView style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
+          <Text style={styles.loadingText}>Loading your profile...</Text>
+          <Text style={[styles.loadingText, { fontSize: 14, marginTop: 16, opacity: 0.7 }]}>
+            This might take a moment...
+          </Text>
+          <Pressable 
+            onPress={() => {
+              console.log('Manual refresh requested')
+              // Force refresh or fallback
+              router.replace('/onboarding')
+            }}
+            style={{ 
+              backgroundColor: '#3B82F6', 
+              paddingHorizontal: 24, 
+              paddingVertical: 12, 
+              borderRadius: 12, 
+              marginTop: 24 
+            }}
+          >
+            <Text style={{ color: 'white', fontWeight: '600' }}>Restart Setup</Text>
+          </Pressable>
+        </SafeAreaView>
+      </LinearGradient>
+    )
+  }
+
+  // If profile exists but missing critical data, show a setup incomplete message
+  if (profile && !profile.streak_start) {
+    return (
+      <LinearGradient 
+        colors={['#2D1B69', '#1E0A3C', '#0A0617']}
+        style={{ flex: 1 }}
+      >
+        <SafeAreaView style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
+          <Text style={styles.loadingText}>Setup Incomplete</Text>
+          <Text style={[styles.loadingText, { fontSize: 14, marginTop: 16, opacity: 0.7, textAlign: 'center' }]}>
+            Your profile is missing some important information. Please complete the setup process.
+          </Text>
+          <Pressable 
+            onPress={() => {
+              console.log('Redirecting to complete onboarding')
+              router.replace('/onboarding')
+            }}
+            style={{ 
+              backgroundColor: '#3B82F6', 
+              paddingHorizontal: 24, 
+              paddingVertical: 12, 
+              borderRadius: 12, 
+              marginTop: 24 
+            }}
+          >
+            <Text style={{ color: 'white', fontWeight: '600' }}>Complete Setup</Text>
+          </Pressable>
+        </SafeAreaView>
+      </LinearGradient>
+    )
+  }
+
+  return (
     <LinearGradient 
       colors={['#2D1B69', '#1E0A3C', '#0A0617']}
       style={{ flex: 1 }}
@@ -196,17 +416,19 @@ export default function HomeScreen() {
           <View style={styles.header}>
             <View>
               <Text style={styles.appTitle}>exhale</Text>
-              <Text style={styles.subtitle}>No Contact Tracker</Text>
+              <Text style={styles.subtitle}>
+                {profile?.name ? `Hi ${profile.name}` : 'No Contact Tracker'}
+              </Text>
             </View>
             <Pressable onPress={handleSettings} style={styles.settingsButton}>
               <Ionicons name="settings-outline" size={20} color="rgba(255, 255, 255, 0.7)" />
         </Pressable>
           </View>
 
-          {/* Weekly Progress Dots */}
+          {/* Weekly Progress Tracker */}
           <View style={styles.weeklyContainer}>
-            <View style={styles.weeklyDots}>
-              {generateWeeklyDots()}
+            <View style={styles.weeklyTracker}>
+              {generateWeeklyTracker()}
             </View>
           </View>
 
@@ -279,13 +501,14 @@ export default function HomeScreen() {
               
               {/* Center Content */}
               <View style={styles.orbContent}>
-                <Text style={styles.daysLabel}>You've been no-contact for:</Text>
+                <Text style={styles.daysLabel}>You&apos;ve been no-contact for:</Text>
                 <Text style={styles.daysNumber}>{daysSinceContact}</Text>
                 <Text style={styles.daysText}>days</Text>
                 
                 {/* Timer */}
                 <View style={styles.timerContainer}>
                   <Text style={styles.timerText}>
+                    {timeRemaining.hours > 0 && `${timeRemaining.hours}h `}
                     {timeRemaining.minutes}m {timeRemaining.seconds}s
                   </Text>
                 </View>
@@ -388,27 +611,32 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     paddingHorizontal: 24,
   },
-  weeklyDots: {
+  weeklyTracker: {
     flexDirection: 'row',
+    gap: 16,
+    alignItems: 'center',
+  },
+  weekDayContainer: {
+    alignItems: 'center',
     gap: 8,
   },
-  weekDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-  weekDotActive: {
-    backgroundColor: '#22D3EE',
-    shadowColor: '#22D3EE',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  weekDotInactive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  weekDayIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  weekDayIconText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  weekDayLabel: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 12,
+    fontWeight: '500',
   },
   progressContainer: {
     alignItems: 'center',
@@ -566,5 +794,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     letterSpacing: -0.2,
+  },
+  loadingText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '500',
+    opacity: 0.7,
   },
 })

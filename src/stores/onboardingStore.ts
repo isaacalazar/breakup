@@ -26,7 +26,7 @@ export interface OnboardingData {
 interface OnboardingStore extends OnboardingData {
   updateData: (updates: Partial<OnboardingData>) => void
   toggleSelection: (item: string, field: keyof Pick<OnboardingData, 'triggers' | 'challenges' | 'panicTools' | 'motivations'>) => void
-  saveProfile: () => Promise<void>
+  saveProfile: () => Promise<boolean>
   reset: () => void
 }
 
@@ -99,39 +99,98 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
     const goalDaysValue = state.selectedGoalDays ?? parseInt(state.goalDays)
 
     const profileData = {
+      name: state.name?.trim() || null,
+      age: state.age ? parseInt(state.age) : null,
       breakup_date: state.breakupDate,
       streak_start,
       goal_days: goalDaysValue,
-      triggers: JSON.stringify(state.triggers),
-      challenges: JSON.stringify(state.challenges),
-      panic_tools: JSON.stringify(state.panicTools),
-      motivations: JSON.stringify(state.motivations),
+      triggers: state.triggers,
+      challenges: state.challenges,
+      panic_tools: state.panicTools,
+      motivations: state.motivations,
       attachment_score,
       readiness_score,
+      onboarding_completed: true,
     }
 
-    const { data: { user } } = await supabase.auth.getUser()
+    // Ensure authenticated session before writing profile (handle race after OAuth)
+    const waitForSession = async (maxMs: number = 10000, intervalMs: number = 500) => {
+      console.log('Waiting for session establishment...')
+      const start = Date.now()
+      while (Date.now() - start < maxMs) {
+        const { data, error } = await supabase.auth.getSession()
+        console.log(`Session check ${Date.now() - start}ms: session=${!!data.session}, user=${data.session?.user?.id}, error=${error?.message}`)
+        const user = data.session?.user
+        if (user) {
+          console.log('Session found!', user.id)
+          return user
+        }
+        await new Promise(res => setTimeout(res, intervalMs))
+      }
+      console.log('Session wait timeout after', maxMs, 'ms')
+      return null
+    }
+
+    console.log('=== SAVE PROFILE START ===')
+    let { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+    console.log('Initial session check:', !!sessionData.session, sessionData.session?.user?.id, sessionError)
     
+    let user = sessionData.session?.user || null
+    if (!user && !sessionError) {
+      console.log('No user found, waiting for session...')
+      user = await waitForSession()
+      console.log('After waiting for session:', !!user, user?.id)
+    }
+
+    if (sessionError || !user) {
+      console.error('=== AUTHENTICATION FAILED ===')
+      console.error('Session error:', sessionError)
+      console.error('User:', user)
+      Alert.alert('Authentication Error', 'Please sign in before saving your profile.')
+      return false
+    }
+
     if (user) {
       // User is logged in - save to database
-      const { error } = await supabase
+      console.log('Saving profile data:', { ...profileData, id: user.id })
+      
+      const { data, error } = await supabase
         .from('profiles')
         .upsert({ ...profileData, id: user.id })
+        .select()
 
       if (error) {
-        Alert.alert('Error', error.message)
-        return
+        console.error('=== PROFILE SAVE ERROR DETAILS ===')
+        console.error('Error message:', error.message)
+        console.error('Error details:', error.details)
+        console.error('Error hint:', error.hint)
+        console.error('Error code:', error.code)
+        console.error('User ID:', user.id)
+        console.error('Profile data:', profileData)
+        Alert.alert('Profile Save Error', `${error.message}\n\nCheck console for details`)
+        return false // Don't mark as complete if save failed
       }
+      
+      console.log('Profile saved successfully:', data)
+      
+      // Only mark onboarding as complete if save succeeded
+      await AsyncStorage.setItem('hasCompletedOnboarding', 'true')
+      
+      // Navigate to home page
+      router.replace('/(tabs)/home')
+      return true
     } else {
+      console.log('No user found, storing locally for later sync')
       // No user - store locally for later sync
       await AsyncStorage.setItem('pendingOnboarding', JSON.stringify(profileData))
+      
+      // Mark onboarding as complete for local storage case
+      await AsyncStorage.setItem('hasCompletedOnboarding', 'true')
+      
+      // Navigate to home page
+      router.replace('/(tabs)/home')
+      return true
     }
-
-    // Mark onboarding as complete
-    await AsyncStorage.setItem('hasCompletedOnboarding', 'true')
-    
-    // Navigate to home page
-    router.replace('/(tabs)')
   },
 
   reset: () => set(initialState)

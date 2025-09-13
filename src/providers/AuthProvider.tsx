@@ -1,10 +1,12 @@
-import React, { createContext, useContext, useEffect, useState } from 'react'
-import { Session } from '@supabase/supabase-js'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { Session } from '@supabase/supabase-js'
+import React, { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 
 interface Profile {
   id: string
+  name: string | null
+  age: number | null
   breakup_date: string | null
   streak_start: string | null
   goal_days: number
@@ -14,6 +16,7 @@ interface Profile {
   motivations: any
   attachment_score: number | null
   readiness_score: number | null
+  onboarding_completed: boolean | null
 }
 
 interface AuthContextType {
@@ -36,21 +39,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   const refreshProfile = async () => {
-    if (!session?.user?.id) {
+    // Always read the latest session directly to avoid stale state races
+    const { data: sess } = await supabase.auth.getSession()
+    const userId = sess.session?.user?.id
+    console.log('refreshProfile called with session:', !!sess.session, userId)
+    if (!userId) {
+      console.log('No session or user ID, setting profile to null')
       setProfile(null)
       return
     }
 
-    const { data } = await supabase
+    // Try to read the profile (maybeSingle avoids throwing when 0 rows)
+    let { data, error } = await supabase
       .from('profiles')
-      .select('id, breakup_date, streak_start, goal_days, triggers, challenges, panic_tools, motivations, attachment_score, readiness_score')
-      .eq('id', session.user.id)
-      .single()
+      .select('id, name, age, breakup_date, streak_start, goal_days, triggers, challenges, panic_tools, motivations, attachment_score, readiness_score, onboarding_completed')
+      .eq('id', userId)
+      .maybeSingle()
 
-    setProfile(data || null)
-    
+    // Gracefully handle 0-rows case (PGRST116) by retrying once after a short delay
+    if (!data && (error?.code === 'PGRST116' || !error)) {
+      await new Promise((r) => setTimeout(r, 250))
+      const retry = await supabase
+        .from('profiles')
+        .select('id, name, age, breakup_date, streak_start, goal_days, triggers, challenges, panic_tools, motivations, attachment_score, readiness_score, onboarding_completed')
+        .eq('id', userId)
+        .maybeSingle()
+      data = retry.data as any
+      error = retry.error as any
+    }
+
+    if (error && error.code !== 'PGRST116') {
+      console.error('refreshProfile select error:', error)
+    }
+    setProfile((data as any) || null)
+
     if (!data) {
-      // No profile exists, check if there's pending onboarding data to sync
+      // No profile exists yet, check if there's pending onboarding data to sync
       await syncPendingOnboardingData()
     }
   }
@@ -81,25 +105,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      if (session) {
-        refreshProfile()
-      }
+    // Timeout fallback to prevent infinite loading
+    const timeout = setTimeout(() => {
+      console.warn('Auth loading timeout, setting loading to false')
       setLoading(false)
-    })
+    }, 5000) // 5 second timeout
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      clearTimeout(timeout)
+      console.log('=== AUTH PROVIDER INIT ===')
+      console.log('Initial session:', !!session, session?.user?.id)
+      console.log('Session error:', error)
       setSession(session)
       if (session) {
-        refreshProfile()
+        console.log('Session found, refreshing profile')
+        refreshProfile().finally(() => setLoading(false))
       } else {
-        setProfile(null)
+        console.log('No session found, setting loading to false')
+        setLoading(false)
       }
+    }).catch((error) => {
+      clearTimeout(timeout)
+      console.error('Auth session error:', error)
       setLoading(false)
     })
 
-    return () => subscription.unsubscribe()
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('=== AUTH STATE CHANGE ===')
+      console.log('Event:', event)
+      console.log('Session:', !!session, session?.user?.id)
+      setSession(session)
+      if (session) {
+        console.log('Session restored, refreshing profile')
+        refreshProfile().finally(() => setLoading(false))
+      } else {
+        console.log('Session lost, clearing profile')
+        setProfile(null)
+        setLoading(false)
+      }
+    })
+
+    return () => {
+      clearTimeout(timeout)
+      subscription.unsubscribe()
+    }
   }, [])
 
   useEffect(() => {

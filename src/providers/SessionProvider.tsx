@@ -1,7 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 // import { useUser } from 'expo-superwall'
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { supabase } from '../lib/supabase'
 import { useAuth } from './AuthProvider'
 
 interface SessionContextType {
@@ -33,12 +32,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const initializeSession = async () => {
       try {
-        // For development: Always start fresh on landing page
-        // Remove these lines in production if you want to persist user progress
-        await Promise.all([
-          AsyncStorage.removeItem('hasSeenLanding'),
-          AsyncStorage.removeItem('hasCompletedOnboarding')
-        ])
+        // Always start fresh on landing page - users should always see landing first
+        await AsyncStorage.removeItem('hasSeenLanding')
+        // Keep onboarding completion status
+        // await AsyncStorage.removeItem('hasCompletedOnboarding')
         
         const [landing, onboarding] = await Promise.all([
           AsyncStorage.getItem('hasSeenLanding'),

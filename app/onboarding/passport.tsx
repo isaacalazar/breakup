@@ -6,6 +6,7 @@ import { useAuth } from '../../src/providers/AuthProvider'
 import { useSession } from '../../src/providers/SessionProvider'
 import { signInWithGoogle } from '../../src/services/googleSignIn'
 import { useOnboardingStore } from '../../src/stores/onboardingStore'
+import { supabase } from '../../src/lib/supabase'
 
 export default function PassportScreen() {
   const store = useOnboardingStore()
@@ -21,10 +22,40 @@ export default function PassportScreen() {
         const result = await signInWithGoogle()
         
         if (result.success) {
-          // Continue with onboarding completion after successful sign in
-          await saveProfile()
-          await markOnboardingComplete()
-          router.replace('/(tabs)/home')
+          // Wait for session to be properly established in AuthProvider
+          console.log('OAuth successful, waiting for session to be established...')
+          
+          // Wait for session to appear in the AuthProvider
+          const waitForAuthSession = async (maxMs = 10000) => {
+            const start = Date.now()
+            console.log('Starting session wait...')
+            while (Date.now() - start < maxMs) {
+              // Refresh the session from the auth provider
+              const { data, error } = await supabase.auth.getSession()
+              console.log(`Session check ${Date.now() - start}ms:`, {
+                hasSession: !!data.session,
+                hasUser: !!data.session?.user,
+                userId: data.session?.user?.id,
+                error: error?.message
+              })
+              if (data.session?.user) {
+                console.log('Session established, user:', data.session.user.id)
+                return true
+              }
+              await new Promise(resolve => setTimeout(resolve, 500))
+            }
+            console.log('Session wait timed out after', maxMs, 'ms')
+            return false
+          }
+          
+          const sessionEstablished = await waitForAuthSession()
+          if (sessionEstablished) {
+            console.log('Attempting to save profile after session establishment...')
+            const ok = await saveProfile()
+            if (!ok) return
+          } else {
+            Alert.alert('Error', 'Failed to establish session after sign in. Please try again.')
+          }
         } else {
           Alert.alert('Sign In Required', result.error || 'Please sign in to complete your profile')
         }
@@ -34,10 +65,8 @@ export default function PassportScreen() {
       }
       return
     }
-    
-    await saveProfile()
-    await markOnboardingComplete()
-    router.replace('/(tabs)/home')
+    const ok = await saveProfile()
+    if (!ok) return
   }
 
   const handleBack = () => {

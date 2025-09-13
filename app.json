@@ -10,7 +10,13 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "tech.raydar.exhale"
+      "bundleIdentifier": "tech.raydar.exhale",
+      "infoPlist": {
+        "CFBundleURLTypes": [
+          { "CFBundleURLSchemes": ["exhale"] },
+          { "CFBundleURLSchemes": ["com.googleusercontent.apps.679911722386-hd6n0rcmpbc2qrt5rbcrh7srbqeqb9n2"] }
+        ]
+      }
     },
     "android": {
       "package": "tech.raydar.exhale",
