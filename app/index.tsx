@@ -40,14 +40,7 @@ export default function IndexScreen() {
     return <Redirect href="/onboarding" />
   }
 
-  // Check if onboarding is complete but there's no session/profile
-  // This can happen if profile save failed but was marked complete locally
-  if (isOnboardingComplete && !session && !profile) {
-    console.log('Onboarding marked complete but no session/profile - redirecting back to onboarding')
-    return <Redirect href="/onboarding" />
-  }
-
   // User has completed onboarding - go to main app
   console.log('Redirecting to app')
-  return <Redirect href="/(tabs)" />
+  return <Redirect href="/(tabs)/home" />
 }

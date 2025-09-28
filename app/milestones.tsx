@@ -38,19 +38,19 @@ const MILESTONES = [
   {
     id: 'month3',
     title: '3 Months',
-    subtitle: 'Transformation',
-    description: 'You\'ve shown incredible dedication and formed lasting new habits.',
+    subtitle: 'Deep Healing',
+    description: 'Real transformation is happening. You\'ve formed lasting new habits.',
     variant: 'platinum' as const,
     requirement: 90,
     reward: 'Platinum Achievement'
   },
   {
-    id: 'goal',
-    title: 'Goal Complete',
+    id: 'month6',
+    title: '6 Months',
     subtitle: 'Master of Self',
-    description: 'You\'ve achieved your personal goal and demonstrated true mastery.',
+    description: 'You\'ve achieved true mastery and demonstrated incredible dedication.',
     variant: 'iridescent' as const,
-    requirement: 0, // Will be set to user's goal
+    requirement: 180,
     reward: 'Ultimate Achievement'
   }
 ]
@@ -58,28 +58,33 @@ const MILESTONES = [
 export default function MilestonesScreen() {
   const { profile } = useAuth()
   
-  if (!profile) {
-    return (
-      <LinearGradient colors={['#2D1B69', '#1E0A3C', '#0A0617']} style={styles.container}>
-        <SafeAreaView style={styles.container}>
-          <Text style={styles.loadingText}>Loading...</Text>
-        </SafeAreaView>
-      </LinearGradient>
-    )
+  // Calculate days using same logic as home screen, with fallback for demo
+  const calculateDaysSinceContact = () => {
+    if (profile?.streak_start) {
+      const startTime = new Date(profile.streak_start)
+      const now = new Date()
+      
+      // Use same calculation as home screen for consistency
+      const startDate = new Date(startTime)
+      startDate.setHours(0, 0, 0, 0) // Start of the start day
+      
+      const currentDate = new Date(now)
+      currentDate.setHours(0, 0, 0, 0) // Start of current day
+      
+      const diffDays = Math.floor((currentDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+      return Math.max(0, diffDays)
+    }
+    
+    // Fallback: Demo data showing 6 days for demo purposes
+    // In a real app, this would be 0 or redirect to onboarding
+    return 6
   }
 
-  const daysSinceContact = profile.streak_start 
-    ? Math.max(0, Math.floor((new Date().getTime() - new Date(profile.streak_start).getTime()) / (1000 * 60 * 60 * 24)))
-    : 0
+  const daysSinceContact = calculateDaysSinceContact()
+  const finalGoalDays = profile?.goal_days || 30
 
-  const finalGoalDays = profile.goal_days || 30
-
-  // Update goal milestone requirement
-  const milestones = MILESTONES.map(milestone => 
-    milestone.id === 'goal' 
-      ? { ...milestone, requirement: finalGoalDays, title: `${finalGoalDays} Days` }
-      : milestone
-  )
+  // Use the fixed milestones
+  const milestones = MILESTONES
 
   const handleBadgePress = (milestone: typeof MILESTONES[0], isUnlocked: boolean) => {
     if (isUnlocked) {

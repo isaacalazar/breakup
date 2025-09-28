@@ -21,16 +21,20 @@ interface Profile {
 
 interface AuthContextType {
   session: Session | null
+  user: Session['user'] | null
   profile: Profile | null
   loading: boolean
   refreshProfile: () => Promise<void>
+  signOut: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType>({
   session: null,
+  user: null,
   profile: null,
   loading: true,
   refreshProfile: async () => {},
+  signOut: async () => {},
 })
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -79,6 +83,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const signOut = async () => {
+    try {
+      await supabase.auth.signOut()
+      // Clear any pending onboarding data
+      await AsyncStorage.removeItem('pendingOnboarding')
+      setSession(null)
+      setProfile(null)
+    } catch (error) {
+      console.error('Error signing out:', error)
+    }
+  }
+
   const syncPendingOnboardingData = async () => {
     if (!session?.user?.id) return
 
@@ -86,7 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const pendingData = await AsyncStorage.getItem('pendingOnboarding')
       if (pendingData) {
         const profileData = JSON.parse(pendingData)
-        
+
         // Save to database
         const { error } = await supabase
           .from('profiles')
@@ -158,7 +174,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [session])
 
   return (
-    <AuthContext.Provider value={{ session, profile, loading, refreshProfile }}>
+    <AuthContext.Provider value={{ session, user: session?.user || null, profile, loading, refreshProfile, signOut }}>
       {children}
     </AuthContext.Provider>
   )

@@ -210,16 +210,12 @@ export default function JournalScreen() {
     )
 
   const renderEntryItem = ({ item }: { item: JournalEntry & { isFirstOfDate: boolean, dateGroup: string } }) => {
-    const firstLine = item.body.split('\n')[0].substring(0, 120)
-    const isToday = item.entry_date === today
+    const firstLine = item.body.split('\n')[0].substring(0, 100)
     const entryTime = new Date(item.created_at || '').toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true
     })
-    
-    // Keep a local ref so we can close the swipeable after actions
-    let swipeable: Swipeable | null = null
 
     return (
       <View>
@@ -232,111 +228,35 @@ export default function JournalScreen() {
             </Text>
           </View>
         )}
-        
-        <Swipeable
-          ref={(ref) => { swipeable = ref }}
-          friction={1}
-          overshootRight={false}
-          rightThreshold={64}
-          enableTrackpadTwoFingerGesture
-          containerStyle={{ borderRadius: 24 }}
-          childrenContainerStyle={{ borderRadius: 24, overflow: 'hidden' }}
-          onSwipeableWillOpen={() => {
-            if (openSwipeRef.current && openSwipeRef.current !== swipeable) {
-              openSwipeRef.current.close()
-            }
-            openSwipeRef.current = swipeable
-            setOpenSwipeId(item.id)
-          }}
-          onSwipeableClose={() => {
-            if (openSwipeRef.current === swipeable) {
-              openSwipeRef.current = null
-            }
-            if (openSwipeId === item.id) setOpenSwipeId(null)
-          }}
-          renderRightActions={(progress) => {
-            const editTranslate = progress.interpolate({
-              inputRange: [0, 1],
-              outputRange: [48, 0],
-            })
-            const deleteTranslate = progress.interpolate({
-              inputRange: [0, 1],
-              outputRange: [72, 0],
-            })
-            const editScale = progress.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] })
-            const deleteScale = progress.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] })
-            return (
-              <View style={styles.swipeActionsContainer}>
-                <Animated.View style={{ transform: [{ translateX: editTranslate }, { scale: editScale }] }}>
-                  <RectButton
-                    style={[styles.swipeActionButton, styles.swipeEdit]}
-                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); swipeable?.close(); handleEditEntry(item) }}
-                    accessibilityLabel="Edit entry"
-                  >
-                    <Ionicons name="create-outline" size={18} color="white" />
-                    <Text style={styles.swipeActionText}>Edit</Text>
-                  </RectButton>
-                </Animated.View>
-                <Animated.View style={{ transform: [{ translateX: deleteTranslate }, { scale: deleteScale }] }}>
-                  <RectButton
-                    style={[styles.swipeActionButton, styles.swipeDelete]}
-                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); swipeable?.close(); handleDeleteEntry(item.id, item.entry_date) }}
-                    accessibilityLabel="Delete entry"
-                  >
-                    <Ionicons name="trash-outline" size={18} color="white" />
-                    <Text style={styles.swipeActionText}>Delete</Text>
-                  </RectButton>
-                </Animated.View>
-              </View>
-            )
-          }}
-        >
-        <Animated.View style={[styles.entryCard, { opacity: 1 }]}> 
+
+        <View style={styles.entryCard}>
           <View style={styles.entryContent}>
-            {/* Header Row */}
             <View style={styles.entryHeader}>
-              <View style={styles.timeSection}>
-                <Text style={styles.entryTime}>{entryTime}</Text>
-                {isToday && <View style={styles.todayIndicator} />}
-              </View>
-              
+              <Text style={styles.entryTime}>{entryTime}</Text>
               <View style={styles.entryActions}>
-                <View style={[styles.moodBadge, { backgroundColor: getMoodColor(item.mood) + '15' }]}> 
+                <View style={styles.moodBadge}>
                   <Text style={styles.moodEmoji}>{getMoodEmoji(item.mood)}</Text>
-                  <Text style={[styles.moodScore, { color: getMoodColor(item.mood) }]}> 
-                    {item.mood}
-                  </Text>
+                  <Text style={styles.moodScore}>{item.mood}</Text>
                 </View>
-                
-                {openSwipeId === item.id ? (
-                  <View style={{ width: 72 }} />
-                ) : (
-                  <>
-                    <Pressable 
-                      style={styles.editButton}
-                      onPress={() => handleEditEntry(item)}
-                    >
-                      <Ionicons name="create-outline" size={16} color="rgba(255, 255, 255, 0.5)" />
-                    </Pressable>
-                    
-                    <Pressable 
-                      style={styles.deleteButton}
-                      onPress={() => handleDeleteEntry(item.id, item.entry_date)}
-                    >
-                      <Ionicons name="trash-outline" size={16} color="rgba(255, 107, 107, 0.7)" />
-                    </Pressable>
-                  </>
-                )}
+                <Pressable
+                  style={styles.actionButton}
+                  onPress={() => handleEditEntry(item)}
+                >
+                  <Ionicons name="create-outline" size={16} color="rgba(255, 255, 255, 0.6)" />
+                </Pressable>
+                <Pressable
+                  style={styles.actionButton}
+                  onPress={() => handleDeleteEntry(item.id, item.entry_date)}
+                >
+                  <Ionicons name="trash-outline" size={16} color="rgba(255, 107, 107, 0.8)" />
+                </Pressable>
               </View>
             </View>
-
-            {/* Content Preview */}
             <Text style={styles.entryPreview} numberOfLines={3}>
-              {firstLine}{item.body.length > 120 ? '...' : ''}
+              {firstLine}{item.body.length > 100 ? '...' : ''}
             </Text>
           </View>
-        </Animated.View>
-        </Swipeable>
+        </View>
       </View>
     )
   }
@@ -344,25 +264,12 @@ export default function JournalScreen() {
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
       <View style={styles.emptyContent}>
-        <View style={styles.emptyIconContainer}>
-          <LinearGradient
-            colors={['#667eea', '#764ba2']}
-            style={styles.emptyIconGradient}
-          >
-            <Ionicons name="create-outline" size={32} color="white" />
-          </LinearGradient>
-        </View>
-        
-        <Text style={styles.emptyTitle}>Begin Your Journey</Text>
+        <Text style={styles.emptyTitle}>No entries yet</Text>
         <Text style={styles.emptySubtitle}>
-          Document your healing process with daily reflections
+          Start documenting your journey
         </Text>
-        
-        <Pressable style={styles.emptyActionButton} onPress={handleNewEntry}>
-          <LinearGradient colors={['#667eea', '#764ba2']} style={styles.emptyButtonGradient}>
-            <Ionicons name="add" size={20} color="white" />
-            <Text style={styles.emptyButtonText}>Write First Entry</Text>
-          </LinearGradient>
+        <Pressable style={styles.emptyButton} onPress={handleNewEntry}>
+          <Text style={styles.emptyButtonText}>Write First Entry</Text>
         </Pressable>
       </View>
     </View>
@@ -391,19 +298,11 @@ export default function JournalScreen() {
   return (
     <LinearGradient colors={['#2D1B69', '#1E0A3C', '#0A0617']} style={styles.container}>
       <SafeAreaView style={styles.container}>
-        {/* Minimalist Header */}
+        {/* Clean Header */}
         <View style={styles.header}>
-          <View style={styles.headerContent}>
-            <Text style={styles.headerTitle}>Journal</Text>
-            <Text style={styles.headerSubtitle}>
-              {Object.values(groupedEntries).flat().length} {Object.values(groupedEntries).flat().length === 1 ? 'entry' : 'entries'}
-            </Text>
-          </View>
-          
+          <Text style={styles.headerTitle}>Journal</Text>
           <Pressable onPress={handleNewEntry} style={styles.addButton}>
-            <LinearGradient colors={['#667eea', '#764ba2']} style={styles.addButtonGradient}>
-              <Ionicons name="add" size={22} color="white" />
-            </LinearGradient>
+            <Ionicons name="add" size={24} color="white" />
           </Pressable>
         </View>
 
@@ -438,18 +337,11 @@ export default function JournalScreen() {
               {/* Modal Header */}
               <View style={styles.modalHeader}>
                 <Pressable onPress={handleCloseModal} style={styles.modalCloseButton}>
-                  <Ionicons name="close" size={24} color="rgba(255, 255, 255, 0.6)" />
+                  <Ionicons name="close" size={20} color="rgba(255, 255, 255, 0.6)" />
                 </Pressable>
-                
-                <View style={styles.modalTitleContainer}>
-                  <Text style={styles.modalTitle}>
-                    {isEditing ? 'Edit Entry' : 'New Entry'}
-                  </Text>
-                  <Text style={styles.modalDate}>
-                    {isEditing ? `${formatDate(editingEntry!.entry_date)} • ${new Date(editingEntry!.created_at || '').toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}` : formatDate(today)}
-                  </Text>
-                </View>
-                
+                <Text style={styles.modalTitle}>
+                  {isEditing ? 'Edit Entry' : 'New Entry'}
+                </Text>
                 <View style={styles.modalHeaderSpacer} />
               </View>
 
@@ -508,21 +400,16 @@ export default function JournalScreen() {
 
               {/* Save Button */}
               <View style={styles.modalFooter}>
-                <Pressable 
-                  style={[styles.saveButton, { 
-                    opacity: loading || !feeling.trim() ? 0.5 : 1 
+                <Pressable
+                  style={[styles.saveButton, {
+                    opacity: loading || !feeling.trim() ? 0.5 : 1
                   }]}
                   onPress={handleSave}
                   disabled={loading || !feeling.trim()}
                 >
-                  <LinearGradient 
-                    colors={loading || !feeling.trim() ? ['#444', '#555'] : ['#667eea', '#764ba2']} 
-                    style={styles.saveButtonGradient}
-                  >
-                    <Text style={styles.saveButtonText}>
-                      {loading ? 'Saving...' : (isEditing ? 'Update Entry' : 'Save Entry')}
-                    </Text>
-                  </LinearGradient>
+                  <Text style={styles.saveButtonText}>
+                    {loading ? 'Saving...' : (isEditing ? 'Update' : 'Save')}
+                  </Text>
                 </Pressable>
               </View>
             </SafeAreaView>
@@ -555,35 +442,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 24,
-    paddingTop: 20,
-    paddingBottom: 32,
-  },
-  headerContent: {
-    flex: 1,
+    paddingTop: 14,
+    paddingBottom: 20,
   },
   headerTitle: {
-    fontSize: 34,
-    fontWeight: '800',
+    fontSize: 28,
+    fontWeight: 'bold',
     color: 'white',
-    letterSpacing: -1.5,
-    marginBottom: 2,
-  },
-  headerSubtitle: {
-    fontSize: 15,
-    color: 'rgba(255, 255, 255, 0.5)',
-    fontWeight: '500',
   },
   addButton: {
-    shadowColor: '#667eea',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 12,
-  },
-  addButtonGradient: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -594,67 +465,60 @@ const styles = StyleSheet.create({
     paddingBottom: 120,
   },
   entryCard: {
-    marginBottom: 16,
-    borderRadius: 24,
+    marginBottom: 12,
+    borderRadius: 16,
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    backdropFilter: 'blur(20px)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    overflow: 'hidden',
-  },
-  entryPressable: {
-    borderRadius: 24,
-    overflow: 'hidden',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   entryContent: {
-    padding: 24,
+    padding: 16,
   },
   entryHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 12,
   },
-  dateSection: {
+  entryTime: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.6)',
+  },
+  entryActions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  entryDate: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: 'white',
-    letterSpacing: -0.3,
-  },
-  todayIndicator: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#06FFA5',
-  },
   moodBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    gap: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    gap: 4,
   },
   moodEmoji: {
-    fontSize: 16,
+    fontSize: 14,
   },
   moodScore: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '600',
+    color: 'white',
+  },
+  actionButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   entryPreview: {
     fontSize: 15,
-    color: 'rgba(255, 255, 255, 0.7)',
-    lineHeight: 24,
-    marginBottom: 12,
-  },
-  entryFooter: {
-    alignItems: 'flex-end',
+    color: 'rgba(255, 255, 255, 0.8)',
+    lineHeight: 20,
   },
 
   // Empty State
@@ -666,86 +530,55 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 40,
   },
-  emptyIconContainer: {
-    marginBottom: 24,
-  },
-  emptyIconGradient: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   emptyTitle: {
-    fontSize: 28,
-    fontWeight: '700',
+    fontSize: 20,
+    fontWeight: '600',
     color: 'white',
-    marginBottom: 12,
-    letterSpacing: -0.5,
+    marginBottom: 8,
   },
   emptySubtitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: 'rgba(255, 255, 255, 0.6)',
     textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 40,
+    marginBottom: 24,
   },
-  emptyActionButton: {
-    shadowColor: '#667eea',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 12,
-  },
-  emptyButtonGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 32,
-    paddingVertical: 16,
-    borderRadius: 24,
-    gap: 8,
+  emptyButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 16,
   },
   emptyButtonText: {
     color: 'white',
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '600',
   },
 
   // Modal Styles
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 24,
-    paddingVertical: 20,
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.06)',
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
   },
   modalCloseButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  modalTitleContainer: {
-    flex: 1,
-    alignItems: 'center',
-  },
   modalTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '600',
     color: 'white',
-    letterSpacing: -0.3,
-  },
-  modalDate: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.5)',
-    fontWeight: '500',
-    marginTop: 2,
   },
   modalHeaderSpacer: {
-    width: 44,
+    width: 36,
   },
   modalScrollView: {
     flex: 1,
@@ -839,26 +672,19 @@ const styles = StyleSheet.create({
   // Footer
   modalFooter: {
     paddingHorizontal: 24,
-    paddingVertical: 24,
+    paddingVertical: 20,
     paddingBottom: 40,
   },
   saveButton: {
-    shadowColor: '#667eea',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 12,
-  },
-  saveButtonGradient: {
-    paddingVertical: 18,
-    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    paddingVertical: 16,
+    borderRadius: 16,
     alignItems: 'center',
   },
   saveButtonText: {
     color: 'white',
-    fontSize: 17,
-    fontWeight: '700',
-    letterSpacing: -0.2,
+    fontSize: 16,
+    fontWeight: '600',
   },
   // Missing styles for entry header and date groupings
   timeSection: {
@@ -877,38 +703,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  editButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+  actionCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  deleteButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 107, 107, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
+  actionCircleDanger: {
+    backgroundColor: 'rgba(255, 107, 107, 0.12)',
+    borderColor: 'rgba(255, 107, 107, 0.25)',
   },
   dateHeader: {
     paddingHorizontal: 4,
-    paddingVertical: 12,
+    paddingVertical: 8,
     marginBottom: 8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   dateHeaderText: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '600',
     color: 'white',
-    letterSpacing: -0.3,
   },
   dateHeaderCount: {
-    fontSize: 14,
+    fontSize: 12,
     color: 'rgba(255, 255, 255, 0.5)',
     fontWeight: '500',
   },

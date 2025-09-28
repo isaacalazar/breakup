@@ -1,9 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai'
-
-// You'll need to add your Gemini API key to your environment variables
-const API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY || ''
-
-const genAI = new GoogleGenerativeAI(API_KEY)
+import { generateTextContent } from './geminiClient'
 
 export interface UserResponses {
   gender: string
@@ -33,13 +28,8 @@ export interface AIAnalysisResult {
 
 export async function analyzeAttachmentWithAI(userResponses: UserResponses): Promise<AIAnalysisResult> {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' })
-
     const prompt = createAnalysisPrompt(userResponses)
-    
-    const result = await model.generateContent(prompt)
-    const response = await result.response
-    const text = response.text()
+    const text = await generateTextContent(prompt)
     
     return parseAIResponse(text)
   } catch (error) {
